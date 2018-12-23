@@ -178,6 +178,9 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Configs\AppSetting.config" />
+    <Content Include="Configs\Database.config" />
+    <Content Include="Configs\NLog.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
