@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseEntity.cs" />
+    <Compile Include="CommonModel\DataResult.cs" />
     <Compile Include="Models\AreaInfoEntity.cs" />
     <Compile Include="Models\BaseDicEntity.cs" />
     <Compile Include="Models\BookEntity.cs" />
@@ -110,6 +111,10 @@
       <Project>{f0e21eaa-5032-4e90-a0be-411c67c8ce82}</Project>
       <Name>HotelBase.Api.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Request\" />
+    <Folder Include="Response\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
