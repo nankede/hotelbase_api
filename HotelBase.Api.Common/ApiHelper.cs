@@ -106,10 +106,5 @@ namespace HotelBase.Api.Common
             return data;
         }
         #endregion
-
-        public static T ToObject<T>(this string Json)
-        {
-            return Json == null ? default(T) : JsonConvert.DeserializeObject<T>(Json);
-        }
     }
 }
