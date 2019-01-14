@@ -13,7 +13,7 @@ namespace HotelBase.Api.Entity.CommonModel
         /// <summary>
         ///     获取或设置 操作结果类型
         /// </summary>
-        public DataResultType Code { get; set; }
+        public int Code { get; set; }
 
         /// <summary>
         ///     获取或设置 操作返回信息

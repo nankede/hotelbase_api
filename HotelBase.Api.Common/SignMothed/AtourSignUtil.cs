@@ -13,15 +13,15 @@ namespace HotelBase.Api.Common.SignMothed
     /// </summary>
     public class AtourSignUtil
     {
-        
-        private string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
+
+        private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["keytest"];
 
         /// <summary>
         /// 获取亚朵签名
         /// </summary>
         /// <param name="dicparams"></param>
         /// <returns></returns>
-        public string GetSignUtil(Dictionary<string,string> dicparams)
+        public static string GetSignUtil(Dictionary<string, string> dicparams)
         {
             var vDic = (from objDic in dicparams orderby objDic.Key ascending select objDic);
             StringBuilder str = new StringBuilder();
@@ -35,7 +35,7 @@ namespace HotelBase.Api.Common.SignMothed
                 }
             }
 
-            var result = MD5Helper.GetMD5(str.ToString().Substring(0, str.ToString().Length - 1)+ AtourAuth_APPKEY);
+            var result = MD5Helper.GetMD5(str.ToString().Substring(0, str.ToString().Length - 1) + AtourAuth_APPKEY);
             return result;
 
         }
