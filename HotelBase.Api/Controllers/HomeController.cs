@@ -1,4 +1,5 @@
 ﻿using HotelBase.Api.Entity;
+using HotelBase.Api.Entity.CommonModel;
 using HotelBase.Api.Entity.Models;
 using HotelBase.Api.Service;
 using System;
@@ -36,5 +37,28 @@ namespace HotelBase.Api.Controllers
 
             return Json("Post");
         }
+
+        #region 亚朵资源
+
+        /// <summary>
+        /// 亚朵城市资源
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> CityInit()
+        {
+            var rtn = new DataResult();
+            try
+            {
+                rtn = YaDuoApiService.GetCityList();
+            }
+            catch (Exception ex)
+            {
+                rtn.Message = ex.ToString();
+            }
+            return Json(rtn);
+        }
+
+        #endregion
     }
 }
