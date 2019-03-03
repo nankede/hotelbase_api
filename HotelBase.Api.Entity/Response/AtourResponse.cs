@@ -14,7 +14,7 @@ namespace HotelBase.Api.Entity.Response
     /// <summary>
     /// 城市列表
     /// </summary>
-    public class AtourCityResponse: BaseResponse
+    public class AtourCityResponse : BaseResponse
     {
         public List<CityList> result { get; set; }
     }
@@ -43,6 +43,14 @@ namespace HotelBase.Api.Entity.Response
     public class AtourHotelResponse : BaseResponse
     {
         public List<HotelyList> result { get; set; }
+    }
+
+    /// <summary>
+    /// 酒店列表
+    /// </summary>
+    public class AtourHotelDetailResponse : BaseResponse
+    {
+        public HotelyList result { get; set; }
     }
 
     public class HotelyList
@@ -115,5 +123,33 @@ namespace HotelBase.Api.Entity.Response
         /// 图片URL地址列表（没有头图区分）
         /// </summary>
         public List<string> pictures { get; set; }
+
+        //mebList
+    }
+
+
+    /// <summary>
+    /// 房型列表
+    /// </summary>
+    public class YdRoomTypeResponse : BaseResponse
+    {
+        public List<YdRoomType> result { get; set; }
+    }
+    public class YdRoomType
+    {
+        /// <summary>
+        /// 床型描述，例：大床，双床
+        /// </summary>
+        public string bedRemark { get; set; }
+
+        /// <summary>
+        /// 房型ID
+        /// </summary>
+        public string roomTypeId { get; set; }
+
+        /// <summary>
+        /// 房型名称
+        /// </summary>
+        public string roomTypeName { get; set; }
     }
 }

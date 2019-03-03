@@ -363,6 +363,17 @@ namespace HotelBase.Api.Entity.Tables
             get { return _hIUpdateTime; }
             set { _hIUpdateTime = value; }
         }
+        /// <summary>
+        /// 外部Id
+        /// </summary>
+        [Column("HIOutId")]
+        public int HIOutId { get; set; } = 0;
+
+        /// <summary>
+        /// 外部类型
+        /// </summary>
+        [Column("HIOutType")]
+        public int HIOutType { get; set; } = 0;
 
     }
 }

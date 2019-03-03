@@ -59,6 +59,46 @@ namespace HotelBase.Api.Controllers
             return Json(rtn);
         }
 
+
+        /// <summary>
+        /// 亚朵城酒店列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> HotelListInit(int maxId, int top)
+        {
+            var rtn = new DataResult();
+            try
+            {
+                rtn = YaDuoApiService.GetHotelList(maxId, top);
+            }
+            catch (Exception ex)
+            {
+                rtn.Message = ex.ToString();
+            }
+            return Json(rtn);
+        }
+
+        //
+
+        /// <summary>
+        /// 亚朵城酒店详情
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> GetHotelDetail(int maxId, int top)
+        {
+            var rtn = new DataResult();
+            try
+            {
+                rtn = YaDuoApiService.GetHotelDetail(maxId, top);
+            }
+            catch (Exception ex)
+            {
+                rtn.Message = ex.ToString();
+            }
+            return Json(rtn);
+        }
         #endregion
     }
 }
