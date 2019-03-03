@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HotelBase.Api.Entity.CommonModel.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,7 @@ namespace HotelBase.Api.Entity.CommonModel
         /// <summary>
         ///     获取或设置 操作结果类型
         /// </summary>
-        public int Code { get; set; }
+        public DataResultType Code { get; set; }
 
         /// <summary>
         ///     获取或设置 操作返回信息

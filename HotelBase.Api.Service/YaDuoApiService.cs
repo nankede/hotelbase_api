@@ -3,6 +3,7 @@ using HotelBase.Api.Common.SignMothed;
 using HotelBase.Api.DataAccess.Resource;
 using HotelBase.Api.DataAccess.System;
 using HotelBase.Api.Entity.CommonModel;
+using HotelBase.Api.Entity.CommonModel.Enum;
 using HotelBase.Api.Entity.Response;
 using HotelBase.Api.Entity.Tables;
 using System;

@@ -99,6 +99,23 @@ namespace HotelBase.Api.Service
             return res;
         }
 
+        
+        /// <summary>
+        /// 更新订单
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <param name="supplierserialid"></param>
+        /// <param name="disserialid"></param>
+        /// <returns></returns>
+        public static int UpdatesSupplierSerialid(string orderserialid, string supplierserialid, string disserialid)
+        {
+            var i = Ho_HotelOrderAccess.UpdatesSupplierSerialid(orderserialid, supplierserialid, disserialid);
+            
+            return i;
+        }
+
+        
+
         /// <summary>
         /// 获取订单日志
         /// </summary>

@@ -1,6 +1,7 @@
 ﻿using HotelBase.Api.Common;
 using HotelBase.Api.Common.SignMothed;
 using HotelBase.Api.Entity.CommonModel;
+using HotelBase.Api.Entity.CommonModel.Enum;
 using HotelBase.Api.Entity.Response;
 using HotelBase.Api.Entity.Tables;
 using HotelBase.Api.Service;

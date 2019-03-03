@@ -44,14 +44,14 @@ namespace HotelBase.Api.Common
         /// <param name="url">地址,地址栏参数同param,例如http://172.28.20.19:8066/api/PublicAPI/CheckSetPassWord?applicationID=1&telephone=1</param>
         /// <param name="param">参数,例如"{applicationID:\"1\",telephone:\"1\"}"</param>
         /// <returns></returns>
-        public static string HttpPost(string url, string param)
+        public static string HttpPost(string url, string param, string cntenttype = "")
         {
             //ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
             Encoding encoding = Encoding.UTF8;
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = "POST";
             request.Accept = "text/html, application/xhtml+xml, */*";
-            request.ContentType = "application/json";
+            request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
 
             byte[] buffer = encoding.GetBytes(param);
             request.ContentLength = buffer.Length;
