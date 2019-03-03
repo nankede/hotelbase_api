@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace HotelBase.Api.Entity.Tables
 {
     /// <summary>
-    /// H_DistributorAreaInfo表实体类
+    /// Sys_AreaMatch
     /// </summary>
-    [Serializable, Table("Sys_AreaMatchModel")]
+    [Serializable, Table("Sys_AreaMatch")]
     public class Sys_AreaMatchModel
     {
 

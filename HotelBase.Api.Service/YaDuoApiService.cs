@@ -117,7 +117,7 @@ namespace HotelBase.Api.Service
             var result = new DataResult();
             var url = AtourSignUtil. AtourAuth_URL + "city/getCityList";
             Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("appid", AtourSignUtil.AtourAuth_APPID);
+            dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
             var sign = AtourSignUtil.GetSignUtil(dic);
             var citylist = ApiHelper.HttpGet(url + "?appId=" + AtourSignUtil.AtourAuth_APPID + "&sign=" + sign);
             if (string.IsNullOrWhiteSpace(citylist))
@@ -149,7 +149,7 @@ namespace HotelBase.Api.Service
         public static DataResult GetHotelDetail(int maxId, int top)
         {
             var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "hotel/getHotelList";
+            var url = AtourSignUtil.AtourAuth_URL + "hotel/getHotel";
 
 
             var citylist = new Sys_AreaMatchAccess().Query().Where(x => x.OutType == 1 && x.HbId > maxId).OrderBy(x => x.OutCityId).ToList();

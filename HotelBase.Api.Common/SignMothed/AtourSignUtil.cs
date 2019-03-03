@@ -38,7 +38,7 @@ namespace HotelBase.Api.Common.SignMothed
                 }
             }
 
-            var result = MD5Helper.GetMD5(str.ToString().Substring(0, str.ToString().Length - 1) + AtourAuth_APPKEY);
+            var result = MD5Helper.GetMD5(str.ToString() + AtourAuth_APPKEY);
             return result;
 
         }
