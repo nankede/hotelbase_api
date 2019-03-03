@@ -337,9 +337,9 @@ namespace HotelBase.Api.DataAccess.Order
         /// <param name="serialid"></param>
         /// <returns></returns>
 
-        public static int UpdateOrderSerialid(int orderid,int type,int state,string serialid)
+        public static int UpdateOrderSerialid(int orderid, int type, int state, string serialid)
         {
-            if (orderid==0) return 0;
+            if (orderid == 0) return 0;
             var sql = new StringBuilder();
             sql.Append(" UPDATE `ho_hotelorder` SET ");
             switch (type)
@@ -360,10 +360,25 @@ namespace HotelBase.Api.DataAccess.Order
                     if (!string.IsNullOrWhiteSpace(serialid))
                     {
                         sql.AppendFormat(" `HOSupplierSerialId` = {0}  ", serialid);
-                    } 
+                    }
                     break;
             }
             sql.Append(" WHERE  `Id` =@Id   Limit 1;  ");
+            var c = MysqlHelper.Update(sql.ToString());
+            return c;
+        }
+
+
+        /// <summary>
+        /// 更新供应商订单号和分销商订单号
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <returns></returns>
+        public static int UpdatesSupplierSerialid(string orderserialid, string supplierserialid, string disserialid)
+        {
+            if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
+            var sql = new StringBuilder();
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}',HODistributorSerialId='{1}' WHERE HOCustomerSerialId='{2}'", supplierserialid, disserialid, orderserialid);
             var c = MysqlHelper.Update(sql.ToString());
             return c;
         }
