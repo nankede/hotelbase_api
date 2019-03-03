@@ -1,4 +1,5 @@
-﻿using HotelBase.Api.Entity.Models;
+﻿using Component.Access;
+using HotelBase.Api.Entity.Models;
 using HotelBase.Api.Entity.Tables;
 using System;
 using System.Collections.Generic;
@@ -53,5 +54,26 @@ namespace HotelBase.Api.DataAccess.System
         }
 
 
+    }
+
+
+    /// <summary>
+    /// 国家地区相关
+    /// </summary>
+    public class Sys_AreaInfoAccess2 : BaseAccess<Sys_AreaInfoModel>
+    {
+        public Sys_AreaInfoAccess2() : base(MysqlHelper.Db_HotelBase)
+        {
+        }
+    }
+
+    /// <summary>
+    /// 地区对应关系表
+    /// </summary>
+    public class Sys_AreaMatchAccess : BaseAccess<Sys_AreaMatchModel>
+    {
+        public Sys_AreaMatchAccess() : base(MysqlHelper.Db_HotelBase)
+        {
+        }
     }
 }

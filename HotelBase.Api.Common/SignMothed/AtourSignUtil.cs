@@ -14,7 +14,10 @@ namespace HotelBase.Api.Common.SignMothed
     public class AtourSignUtil
     {
 
-        private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["keytest"];
+        public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApi"];
+        public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appid"];
+        private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
+
 
         /// <summary>
         /// 获取亚朵签名

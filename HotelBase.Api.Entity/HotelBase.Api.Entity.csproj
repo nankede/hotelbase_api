@@ -94,6 +94,7 @@
     <Compile Include="Tables\H_HoteRulePriceModel.cs" />
     <Compile Include="Tables\H_ResourceLogModel.cs" />
     <Compile Include="Tables\H_SupplierModel.cs" />
+    <Compile Include="Tables\Sys_AreaMatchModel.cs" />
     <Compile Include="Tables\Sys_BaseDictionaryModel.cs" />
     <Compile Include="Tables\Sys_DepartInfoModel.cs" />
     <Compile Include="Tables\Sys_LogModel.cs" />
