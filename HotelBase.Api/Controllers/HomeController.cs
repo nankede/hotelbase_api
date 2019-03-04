@@ -99,6 +99,50 @@ namespace HotelBase.Api.Controllers
             }
             return Json(rtn);
         }
+
+
+        /// <summary>
+        /// 酒店房型
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> GetRoomType(int id)
+
+        {
+            var rtn = new DataResult();
+            try
+            {
+                rtn = YaDuoApiService.GetRoomType(id);
+            }
+            catch (Exception ex)
+            {
+                rtn.Message = ex.ToString();
+            }
+            return Json(rtn);
+        }
+
+
+        /// <summary>
+        /// 酒店房型
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> GetRoomRate(int id, DateTime start, int top)
+
+        {
+            var rtn = new DataResult();
+            try
+            {
+                rtn = YaDuoApiService.GetRoomRate(id, start, top);
+            }
+            catch (Exception ex)
+            {
+                rtn.Message = ex.ToString();
+            }
+            return Json(rtn);
+        }
         #endregion
     }
 }

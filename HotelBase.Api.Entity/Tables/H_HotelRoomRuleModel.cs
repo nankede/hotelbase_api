@@ -266,6 +266,16 @@ namespace HotelBase.Api.Entity.Tables
             get { return _hRRUpdateName; }
             set { _hRRUpdateName = value; }
         }
+        /// <summary>
+        ///  外部
+        /// </summary>
+        [Column("HRROutType")]
+        public int HRROutType { get; set; } = 0;
 
+        /// <summary>
+        ///  HRROutId 同Room表
+        /// </summary>
+        [Column("HRROutId")]
+        public int HRROutId { get; set; } = 0;
     }
 }

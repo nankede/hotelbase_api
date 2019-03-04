@@ -145,11 +145,83 @@ namespace HotelBase.Api.Entity.Response
         /// <summary>
         /// 房型ID
         /// </summary>
-        public string roomTypeId { get; set; }
+        public int roomTypeId { get; set; }
 
         /// <summary>
         /// 房型名称
         /// </summary>
         public string roomTypeName { get; set; }
+    }
+
+
+    /// <summary>
+    /// 房型价格列表
+    /// </summary>
+    public class YdRoomRateResponse : BaseResponse
+    {
+        public List<YdRoomRate> result { get; set; }
+    }
+    public class YdRoomRate
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string accDate { get; set; }
+
+        /// <summary>
+        /// 房型ID
+        /// </summary>
+        public int roomTypeId { get; set; }
+
+        /// <summary>
+        /// 房型名称
+        /// </summary>
+        public string roomTypeName { get; set; }
+
+
+        /// <summary>
+        /// 房型名称
+        /// </summary>
+        public string roomRateTypeName { get; set; }
+        /// <summary>
+        /// 价格
+        /// </summary>
+        public decimal roomRate { get; set; }
+
+        /// <summary>
+        /// 支付类型：1：现付； 2：预付； 3：飞猪信用住
+        /// </summary>
+        public int payType { get; set; }
+    }
+
+
+    /// <summary>
+    /// 房型库存列表
+    /// </summary>
+    public class YdRoomStoreResponse : BaseResponse
+    {
+        public List<YdRoomStore> result { get; set; }
+    }
+    public class YdRoomStore
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string accDate { get; set; }
+
+        /// <summary>
+        /// 房型ID
+        /// </summary>
+        public int roomTypeId { get; set; }
+
+        /// <summary>
+        /// 房型名称
+        /// </summary>
+        public string roomTypeName { get; set; }
+
+        /// <summary>
+        /// 库存数量
+        /// </summary>
+        public int inventoryNum { get; set; }
     }
 }
