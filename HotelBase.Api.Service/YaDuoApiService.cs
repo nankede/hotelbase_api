@@ -453,6 +453,8 @@ namespace HotelBase.Api.Service
                 { "appId", AtourSignUtil.AtourAuth_APPID },
                 { "hotelId",hotelId.ToString() },
                 { "roomTypeId", room.HROutId.ToString() },
+                { "mebId", AtourSignUtil.AtourAuth_MebId },
+                
                 { "start", start.ToString("yyyy-MM-dd") },
                 { "end", start.AddDays(top).ToString("yyyy-MM-dd") }
             };

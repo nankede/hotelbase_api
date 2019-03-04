@@ -16,6 +16,8 @@ namespace HotelBase.Api.Common.SignMothed
 
         public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApi"];
         public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appid"];
+        public static string AtourAuth_MebId = ConfigurationManager.AppSettings["mebid"];
+        
         private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
 
 
