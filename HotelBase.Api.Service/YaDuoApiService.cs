@@ -29,9 +29,8 @@ namespace HotelBase.Api.Service
         {
             var result = new DataResult()
             {
-                Data = $"{maxId + top}"
+                Data = $"{maxId + top};"
             };
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotelList";
 
             var citylist = new Sys_AreaMatchAccess().Query().Where(x => x.OutType == 1 && x.HbId > maxId).OrderBy(x => x.OutCityId).ToList();
             if (citylist == null || !citylist.Any())
@@ -43,10 +42,12 @@ namespace HotelBase.Api.Service
             var log = string.Empty;
             foreach (var item in citylist)
             {
+                result.Data += $"[{item.OutCityId}]：";
                 Dictionary<string, string> dic = new Dictionary<string, string>();
                 dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
                 dic.Add("cityId", item.OutCityId.ToString());
                 var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotelList";
                 url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&cityId=" + item.OutCityId.ToString() + "&sign=" + sign;
                 var hotellst = ApiHelper.HttpGet(url);
                 if (!string.IsNullOrWhiteSpace(hotellst))
@@ -54,56 +55,58 @@ namespace HotelBase.Api.Service
                     var baseCity = new Sys_AreaInfoAccess2().Query().FirstOrDefault(x => x.id == item.HbId);
                     var baseProv = new Sys_AreaInfoAccess2().Query().FirstOrDefault(x => x.id == baseCity.pid);
                     var data = hotellst.ToObject<AtourHotelResponse>();
+                    result.Data += $"{baseCity.name}酒店数量：{data?.result?.Count};";
                     data?.result?.ForEach(x =>
-                    {
-                        var hDb = new H_HotelInfoAccess();
-                        var model = hDb.Query().Where(h => h.HIOutId == x.hotelId && h.HIOutType == 1).FirstOrDefault();
-                        int id = model?.Id ?? 0;
-                        if (model == null || id <= 0)
-                        {
-                            model = new H_HotelInfoModel()
-                            {
-                                HIOutId = x.hotelId,
-                                HIOutType = 1,
-                                HIName = x.name ?? String.Empty,
-                                HIAddress = x.address ?? String.Empty,
-                                HILinkPhone = x.tel ?? string.Empty,
-                                HICity = baseCity.name,
-                                HICityId = baseCity.id,
-                                HIProvince = baseProv.name,
-                                HIProvinceId = baseCity.pid,
-                                HIAddName = "",
-                                HIAddTime = DateTime.Now,
-                                HICheckIn = string.Empty,
-                                HICheckOut = string.Empty,
-                                HIChildRemark = string.Empty,
-                                HICounty = string.Empty,
-                                HICountyId = 0,
-                                HIFacilities = string.Empty,
-                                HIHotelIntroduction = string.Empty,
-                                HIIsValid = 1,
-                                HIPetRemark = string.Empty,
-                                HIShoppingArea = string.Empty,
-                                HIShoppingAreaId = 0,
-                                HIUpdateName = string.Empty,
-                                HIUpdateTime = DateTime.Now,
-                            };
-                            id = (int)(hDb.Add(model));
-                        }
-                        else
-                        {//更新
-                            //hDb.Update().Where(h=>h.Id==id)
-                            //.Set(h=>h.);
-                        }
-                        if (id > 0)
-                        {
-                            PidInit(x, id);
-                        }
-                    });
+                     {
+                         var hDb = new H_HotelInfoAccess();
+                         var model = hDb.Query().Where(h => h.HIOutId == x.hotelId && h.HIOutType == 1).FirstOrDefault();
+                         int id = model?.Id ?? 0;
+                         if (model == null || id <= 0)
+                         {
+                             model = new H_HotelInfoModel()
+                             {
+                                 HIOutId = x.hotelId,
+                                 HIOutType = 1,
+                                 HIName = x.name ?? String.Empty,
+                                 HIAddress = x.address ?? String.Empty,
+                                 HILinkPhone = x.tel ?? string.Empty,
+                                 HICity = baseCity.name,
+                                 HICityId = baseCity.id,
+                                 HIProvince = baseProv.name,
+                                 HIProvinceId = baseCity.pid,
+                                 HIAddName = "",
+                                 HIAddTime = DateTime.Now,
+                                 HICheckIn = string.Empty,
+                                 HICheckOut = string.Empty,
+                                 HIChildRemark = string.Empty,
+                                 HICounty = string.Empty,
+                                 HICountyId = 0,
+                                 HIFacilities = string.Empty,
+                                 HIHotelIntroduction = string.Empty,
+                                 HIIsValid = 1,
+                                 HIPetRemark = string.Empty,
+                                 HIShoppingArea = string.Empty,
+                                 HIShoppingAreaId = 0,
+                                 HIUpdateName = string.Empty,
+                                 HIUpdateTime = DateTime.Now,
+                                 HIGdLonLat = $"{x.longitude},{x.latitude}"
+                             };
+                             id = (int)(hDb.Add(model));
+                         }
+                         else
+                         {//更新
+                          //hDb.Update().Where(h=>h.Id==id)
+                          //.Set(h=>h.);
+                         }
+                         if (id > 0)
+                         {
+                             PidInit(x, id);
+                         }
+                     });
                 }
                 else
                 {
-                    log += $"[{item.OutCityId}]：无数据；";
+                    result.Data += $"无数据；";
                 }
             }
 
@@ -142,44 +145,6 @@ namespace HotelBase.Api.Service
             });
         }
 
-        /// <summary>
-        /// 获取城市列表
-        /// </summary>
-        /// <returns></returns>
-
-        public static DataResult GetCityList()
-        {
-            var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "city/getCityList";
-            Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
-            var sign = AtourSignUtil.GetSignUtil(dic);
-            var citylist = ApiHelper.HttpGet(url + "?appId=" + AtourSignUtil.AtourAuth_APPID + "&sign=" + sign);
-            if (string.IsNullOrWhiteSpace(citylist))
-            {
-                result = new DataResult { Code = DataResultType.Fail, Message = "系统异常" };
-            }
-            var data = citylist.ToObject<AtourCityResponse>();
-            var modellist = data?.result?.Select(x =>
-            new Sys_AreaMatchModel
-            {
-                OutProvId = 0,
-                OutProvName = x.provinceName,
-                OutCityId = x.cityId,
-                OutCityName = x.cityName,
-                OutType = 1
-            })?.ToList();
-            if (modellist != null && modellist.Any())
-            {
-                var issuccess = new Sys_AreaMatchAccess().AddBatch(modellist);
-                result.Code = issuccess ? DataResultType.Sucess : DataResultType.Fail;
-            }
-            else
-            {
-                result = new DataResult { Code = DataResultType.Fail, Message = string.IsNullOrEmpty(data.msg) ? "系统异常" : data.msg };
-            }
-            return result;
-        }
 
         /// <summary>
         /// 酒店详情
@@ -190,7 +155,6 @@ namespace HotelBase.Api.Service
         public static DataResult GetHotelDetail(int maxId, int top)
         {
             var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotel";
 
             var hDb = new H_HotelInfoAccess();
             var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
@@ -205,6 +169,7 @@ namespace HotelBase.Api.Service
                 dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
                 dic.Add("hotelId", x.HIOutId.ToString());
                 var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotel";
                 url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&hotelId=" + x.HIOutId + "&sign=" + sign;
                 var rtn = ApiHelper.HttpGet(url)?.ToObject<AtourHotelDetailResponse>();
                 var hotel = rtn?.result;
@@ -240,7 +205,6 @@ namespace HotelBase.Api.Service
         public static DataResult GetRoomType(int id)
         {
             var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomTypeList";
 
             var hDb = new H_HotelInfoAccess();
             var hotelList = hDb.Query().Where(h => h.HIOutId == id && h.HIOutType == 1).OrderBy(h => h.HIOutId)?.ToList();
@@ -257,6 +221,7 @@ namespace HotelBase.Api.Service
                 dic.Add("hotelId", x.HIOutId.ToString());
 
                 var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomTypeList";
                 url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&hotelId=" + x.HIOutId + "&sign=" + sign;
                 var rtn = ApiHelper.HttpGet(url)?.ToObject<YdRoomTypeResponse>();
                 var list = rtn?.result;
@@ -454,7 +419,7 @@ namespace HotelBase.Api.Service
                 { "hotelId",hotelId.ToString() },
                 { "roomTypeId", room.HROutId.ToString() },
                 { "mebId", AtourSignUtil.AtourAuth_MebId },
-                
+
                 { "start", start.ToString("yyyy-MM-dd") },
                 { "end", start.AddDays(top).ToString("yyyy-MM-dd") }
             };
@@ -521,7 +486,61 @@ namespace HotelBase.Api.Service
             return rtn;
         }
 
-        //库存 baoku/hotel/getRoomInventoryList
+        //库存 baoku/hotel/getRoomInventoryList、
+
+        #region 城市匹配
+
+
+        /// <summary>
+        /// 获取城市列表
+        /// </summary>
+        /// <returns></returns>
+
+        public static DataResult GetCityList()
+        {
+            var result = new DataResult();
+            var url = AtourSignUtil.AtourAuth_URL + "city/getCityList";
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
+            var sign = AtourSignUtil.GetSignUtil(dic);
+            var citylist = ApiHelper.HttpGet(url + "?appId=" + AtourSignUtil.AtourAuth_APPID + "&sign=" + sign);
+            if (string.IsNullOrWhiteSpace(citylist))
+            {
+                result = new DataResult { Code = DataResultType.Fail, Message = "系统异常" };
+            }
+
+            var oldList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 3).ToList();
+            var modellist = new List<Sys_AreaMatchModel>();
+            var data = citylist.ToObject<AtourCityResponse>();
+            data?.result?.ForEach(n =>
+            {
+                var old = oldList.FirstOrDefault(x => x.name == n.cityName.Replace("市", ""));
+                var model = new Sys_AreaMatchModel
+                {
+                    OutProvId = 0,
+                    OutProvName = n.provinceName,
+                    OutCityId = n.cityId,
+                    OutCityName = n.cityName,
+                    HbId = old?.id ?? 0,
+                    OutType = 1
+                };
+                var db = new Sys_AreaMatchAccess();
+                var m = db.Query().Where(x => x.OutType == 1 && x.OutCityId == n.cityId).FirstOrDefault();
+                if (m == null || m.Id <= 0)
+                {
+                    db.Add(model);
+                    result.Data += $"{old?.id}:{n.cityName}；";
+                }
+                else
+                {
+
+                }
+            });
+
+            return result;
+        }
+
+        #endregion
     }
 
 }

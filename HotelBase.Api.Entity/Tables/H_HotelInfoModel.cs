@@ -375,5 +375,11 @@ namespace HotelBase.Api.Entity.Tables
         [Column("HIOutType")]
         public int HIOutType { get; set; } = 0;
 
+        /// <summary>
+        /// 高德经纬度
+        /// </summary>
+        [Column("HIGdLonLat")]
+        public string HIGdLonLat { get; set; } = string.Empty;
+
     }
 }
