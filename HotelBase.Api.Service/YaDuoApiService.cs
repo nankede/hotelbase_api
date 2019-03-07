@@ -202,18 +202,18 @@ namespace HotelBase.Api.Service
         /// <param name="maxId"></param>
         /// <param name="top"></param>
         /// <returns></returns>
-        public static DataResult GetRoomType(int id)
+        public static DataResult GetRoomType(int id, int top)
         {
             var result = new DataResult();
 
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId == id && h.HIOutType == 1).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.HIOutId >= id && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
                 result.Message = "未查询到酒店";
                 return result;
             }
-
+            result.Data = string.Empty;
             hotelList.ForEach(x =>
             {
                 var dic = new Dictionary<string, string>();
@@ -234,6 +234,7 @@ namespace HotelBase.Api.Service
 
                     list.ForEach(l =>
                     {
+                        result.Data += $"{x.HIName}新增房型{list.Count()}个；";
                         var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HROutType == 1)?.FirstOrDefault();
                         if (baseRoom == null || baseRoom.Id <= 0)
                         {
@@ -264,6 +265,9 @@ namespace HotelBase.Api.Service
                 {
                     result.Message = rtn?.msg ?? "系统异常";
                 }
+                //查询最近三天的价格和库存
+                var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 3);
+                result.Data += rrRtn.Data.ToString();
             });
 
             return result;
@@ -309,8 +313,10 @@ namespace HotelBase.Api.Service
         /// 单酒店处理房型价格
         /// </summary>
         /// <param name="hotel"></param>
-        private static void SetRoomRate(H_HotelInfoModel hotel, DateTime start, int top)
+        private static DataResult SetRoomRate(H_HotelInfoModel hotel, DateTime start, int top)
         {
+            var result = new DataResult();
+            result.Data = string.Empty;
             start = start.Year <= 2000 ? DateTime.Now : start;
             var roomdb = new H_HotelRoomAccess();
             var roomType = roomdb.Query().Where(x => x.HIId == hotel.Id && x.HROutType == 1).ToList();
@@ -401,6 +407,7 @@ namespace HotelBase.Api.Service
                     });
                 }
             });
+            return result;
         }
 
         /// <summary>
@@ -544,3 +551,7 @@ namespace HotelBase.Api.Service
     }
 
 }
+
+
+
+

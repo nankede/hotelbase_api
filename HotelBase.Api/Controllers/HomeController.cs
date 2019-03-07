@@ -107,13 +107,13 @@ namespace HotelBase.Api.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
-        public JsonResult<DataResult> GetRoomType(int id)
+        public JsonResult<DataResult> GetRoomType(int id,int top)
 
         {
             var rtn = new DataResult();
             try
             {
-                rtn = YaDuoApiService.GetRoomType(id);
+                rtn = YaDuoApiService.GetRoomType(id, top);
             }
             catch (Exception ex)
             {
