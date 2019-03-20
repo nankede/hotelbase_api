@@ -205,7 +205,7 @@ namespace HotelBase.Api.Service
         public static DataResult GetRoomType(int id, int top)
         {
             var result = new DataResult();
-
+            result.Data = string.Empty;
             var hDb = new H_HotelInfoAccess();
             var hotelList = hDb.Query().Where(h => h.HIOutId >= id && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
@@ -213,7 +213,7 @@ namespace HotelBase.Api.Service
                 result.Message = "未查询到酒店";
                 return result;
             }
-            result.Data = string.Empty;
+            var indexCount = 0;
             hotelList.ForEach(x =>
             {
                 var dic = new Dictionary<string, string>();
@@ -231,10 +231,9 @@ namespace HotelBase.Api.Service
                     var db = new H_HotelRoomAccess();
                     var room = db.Query().Where(r => r.HIId == x.Id).ToList();
                     var updateList = room?.Where(r => listId.Contains(r.HROutId) && r.HROutType == 1)?.ToList();
-
+                    result.Data += $"[{indexCount++}]{x.HIName}新增房型{list.Count()}个；";
                     list.ForEach(l =>
                     {
-                        result.Data += $"{x.HIName}新增房型{list.Count()}个；";
                         var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HROutType == 1)?.FirstOrDefault();
                         if (baseRoom == null || baseRoom.Id <= 0)
                         {
@@ -244,11 +243,11 @@ namespace HotelBase.Api.Service
                                 HIId = x.Id,
                                 HROutType = 1,
                                 HROutId = l.roomTypeId,
-                                HRName = l.roomTypeName,
-                                HRRoomSIze = l.bedRemark,
+                                HRName = l.roomTypeName ?? string.Empty,
+                                HRRoomSIze = string.Empty,
                                 HRAddName = "亚朵新增",
                                 HRAddTime = DateTime.Now,
-                                HRBedSize = 0,
+                                HRBedSize = GetBedSize(l.bedRemark),
                                 HRBedType = 0,
                                 HRFloor = string.Empty,
                                 HRIsValid = 1,
@@ -267,11 +266,31 @@ namespace HotelBase.Api.Service
                 }
                 //查询最近三天的价格和库存
                 var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 3);
-                result.Data += rrRtn.Data.ToString();
+                result.Data += rrRtn.Data?.ToString() ?? string.Empty;
             });
 
             return result;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="remark"></param>
+        /// <returns></returns>
+        public static int GetBedSize(string remark)
+        {
+            if (remark == "大床")
+            {
+                return 50101;
+            }
+            if (remark == "双床")
+            {
+                return 50102;
+            }
+
+            return 0;
+        }
+
 
 
         //房价 baoku/hotel/getRoomRateList
@@ -339,7 +358,7 @@ namespace HotelBase.Api.Service
                         {
                             oldRule = new H_HotelRoomRuleModel
                             {
-                                HRRName = p.roomRateTypeName,
+                                HRRName = p.roomRateTypeName ?? string.Empty,
                                 HRROutId = p.roomTypeId,
                                 HRRIsValid = 1,
                                 HRROutType = 1,
