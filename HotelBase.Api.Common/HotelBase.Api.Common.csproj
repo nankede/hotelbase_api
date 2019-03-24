@@ -88,6 +88,7 @@
     <Compile Include="Security\Encrypt.cs" />
     <Compile Include="Security\VerifyCode.cs" />
     <Compile Include="SignMothed\AtourSignUtil.cs" />
+    <Compile Include="SignMothed\XiWanApi.cs" />
     <Compile Include="Web\Keys.cs" />
     <Compile Include="Web\WebHelper.cs" />
   </ItemGroup>
