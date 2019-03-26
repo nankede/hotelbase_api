@@ -21,6 +21,8 @@ namespace HotelBase.Api.Service
     /// </summary>
     public class XiWanApiService
     {
+        private static string HotelListUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotelPage.ashx";
+
         /// <summary>
         /// 获取酒店列表
         /// </summary>
@@ -31,120 +33,19 @@ namespace HotelBase.Api.Service
             {
                 Data = $"{maxId + top};"
             };
+            var request = new XiWanPageRequest { PageIndex = 1, PageSize = 100 };
+            var rtn = XiWanAPI.XiWanPost<XiWanHotelList, XiWanPageRequest>(request, HotelListUrl);
+            result.Data = rtn?.Result;
 
-            var citylist = new Sys_AreaMatchAccess().Query().Where(x => x.OutType == 1 && x.HbId > maxId).OrderBy(x => x.OutCityId).ToList();
-            if (citylist == null || !citylist.Any())
+            if (rtn != null && rtn.Result != null)
             {
-                result.Message = $"{maxId}未查询到数据";
-                result.Data = $"{maxId + top}";
-                return result;
-            }
-            var log = string.Empty;
-            foreach (var item in citylist)
-            {
-                result.Data += $"[{item.OutCityId}]：";
-                Dictionary<string, string> dic = new Dictionary<string, string>();
-                dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
-                dic.Add("cityId", item.OutCityId.ToString());
-                var sign = AtourSignUtil.GetSignUtil(dic);
-                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotelList";
-                url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&cityId=" + item.OutCityId.ToString() + "&sign=" + sign;
-                var hotellst = ApiHelper.HttpGet(url);
-                if (!string.IsNullOrWhiteSpace(hotellst))
-                {
-                    var baseCity = new Sys_AreaInfoAccess2().Query().FirstOrDefault(x => x.id == item.HbId);
-                    var baseProv = new Sys_AreaInfoAccess2().Query().FirstOrDefault(x => x.id == baseCity.pid);
-                    var data = hotellst.ToObject<AtourHotelResponse>();
-                    result.Data += $"{baseCity.name}酒店数量：{data?.result?.Count};";
-                    data?.result?.ForEach(x =>
-                     {
-                         var hDb = new H_HotelInfoAccess();
-                         var model = hDb.Query().Where(h => h.HIOutId == x.hotelId && h.HIOutType == 1).FirstOrDefault();
-                         int id = model?.Id ?? 0;
-                         if (model == null || id <= 0)
-                         {
-                             model = new H_HotelInfoModel()
-                             {
-                                 HIOutId = x.hotelId,
-                                 HIOutType = 1,
-                                 HIName = x.name ?? String.Empty,
-                                 HIAddress = x.address ?? String.Empty,
-                                 HILinkPhone = x.tel ?? string.Empty,
-                                 HICity = baseCity.name,
-                                 HICityId = baseCity.id,
-                                 HIProvince = baseProv.name,
-                                 HIProvinceId = baseCity.pid,
-                                 HIAddName = "",
-                                 HIAddTime = DateTime.Now,
-                                 HICheckIn = string.Empty,
-                                 HICheckOut = string.Empty,
-                                 HIChildRemark = string.Empty,
-                                 HICounty = string.Empty,
-                                 HICountyId = 0,
-                                 HIFacilities = string.Empty,
-                                 HIHotelIntroduction = string.Empty,
-                                 HIIsValid = 1,
-                                 HIPetRemark = string.Empty,
-                                 HIShoppingArea = string.Empty,
-                                 HIShoppingAreaId = 0,
-                                 HIUpdateName = string.Empty,
-                                 HIUpdateTime = DateTime.Now,
-                                 HIGdLonLat = $"{x.longitude},{x.latitude}"
-                             };
-                             id = (int)(hDb.Add(model));
-                         }
-                         else
-                         {//更新
-                          //hDb.Update().Where(h=>h.Id==id)
-                          //.Set(h=>h.);
-                         }
-                         if (id > 0)
-                         {
-                             PidInit(x, id);
-                         }
-                     });
-                }
-                else
-                {
-                    result.Data += $"无数据；";
+                if (rtn.Result.HotelList != null && rtn.Result.HotelList.Count > 0)
+                {//存储酒店名称
+
                 }
             }
-
             return result;
         }
-        /// <summary>
-        /// 图片初始化，带验证图片是否存在
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="id"></param>
-        private static void PidInit(HotelyList x, int id, int type = 20201)
-        {
-            var hpDb = new H_HotelPictureAccess();
-            x.pictures?.ForEach(p =>
-            {
-                if (!string.IsNullOrEmpty(p))
-                {
-                    var pic = hpDb.Query().Where(hp => hp.HPUrl == p && hp.HIId == id).FirstOrDefault();
-                    if (pic == null || pic.Id <= 0)
-                    {
-                        pic = new H_HotelPictureModel
-                        {
-                            HPOutId = x.hotelId,
-                            HPAddName = string.Empty,
-                            HIId = id,
-                            HPAddTime = DateTime.Now,
-                            HPIsValid = 1,
-                            HPType = type,
-                            HPUpdateName = string.Empty,
-                            HPUpdateTime = DateTime.Now,
-                            HPUrl = p,
-                        };
-                        hpDb.Add(pic);
-                    }
-                }
-            });
-        }
-
 
         /// <summary>
         /// 酒店详情
@@ -193,6 +94,40 @@ namespace HotelBase.Api.Service
             });
 
             return result;
+        }
+
+
+        /// <summary>
+        /// 图片初始化，带验证图片是否存在
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="id"></param>
+        private static void PidInit(HotelyList x, int id, int type = 20201)
+        {
+            var hpDb = new H_HotelPictureAccess();
+            x.pictures?.ForEach(p =>
+            {
+                if (!string.IsNullOrEmpty(p))
+                {
+                    var pic = hpDb.Query().Where(hp => hp.HPUrl == p && hp.HIId == id).FirstOrDefault();
+                    if (pic == null || pic.Id <= 0)
+                    {
+                        pic = new H_HotelPictureModel
+                        {
+                            HPOutId = x.hotelId,
+                            HPAddName = string.Empty,
+                            HIId = id,
+                            HPAddTime = DateTime.Now,
+                            HPIsValid = 1,
+                            HPType = type,
+                            HPUpdateName = string.Empty,
+                            HPUpdateTime = DateTime.Now,
+                            HPUrl = p,
+                        };
+                        hpDb.Add(pic);
+                    }
+                }
+            });
         }
 
         //房型 baoku/hotel/getRoomTypeList
@@ -569,6 +504,38 @@ namespace HotelBase.Api.Service
         #endregion
     }
 
+    public class XiWanHotelRequest
+    {
+
+    }
+
+    /// <summary>
+    /// 喜玩酒店
+    /// </summary>
+    public class XiWanHotelList : XiWanPageInfo
+    {
+        /// <summary>
+        /// 酒店
+        /// </summary>
+        public List<XiWanHotelInfo> HotelList { get; set; }
+
+    }
+
+    /// <summary>
+    /// 喜玩酒店
+    /// </summary>
+    public class XiWanHotelInfo
+    {
+        /// <summary>
+        /// id
+        /// </summary>
+        public int HotelId { get; set; }
+        /// <summary>
+        /// 名称
+        /// </summary>
+        public string HotelName { get; set; }
+
+    }
 }
 
 

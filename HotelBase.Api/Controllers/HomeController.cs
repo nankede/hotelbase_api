@@ -107,7 +107,7 @@ namespace HotelBase.Api.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
-        public JsonResult<DataResult> GetRoomType(int id,int top)
+        public JsonResult<DataResult> GetRoomType(int id, int top)
 
         {
             var rtn = new DataResult();
@@ -143,6 +143,22 @@ namespace HotelBase.Api.Controllers
             }
             return Json(rtn);
         }
+        #endregion
+
+        #region 喜玩资源
+
+        /// <summary>
+        /// 酒店列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> Xw_HotelList()
+        {
+            var rtn = XiWanApiService.GetHotelList(1, 1);
+
+            return Json(rtn);
+        }
+
         #endregion
     }
 }
