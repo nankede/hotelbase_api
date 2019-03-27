@@ -1,4 +1,5 @@
-﻿using HotelBase.Api.Common;
+﻿using Component.Access.DapperExtensions.Lambda;
+using HotelBase.Api.Common;
 using HotelBase.Api.Common.SignMothed;
 using HotelBase.Api.DataAccess.Resource;
 using HotelBase.Api.DataAccess.System;
@@ -36,16 +37,57 @@ namespace HotelBase.Api.Service
             var request = new XiWanPageRequest { PageIndex = 1, PageSize = 100 };
             var rtn = XiWanAPI.XiWanPost<XiWanHotelList, XiWanPageRequest>(request, HotelListUrl);
             result.Data = rtn?.Result;
+            var totalCount = 0;
 
             if (rtn != null && rtn.Result != null)
             {
+                totalCount = rtn.Result.PageCount;
                 if (rtn.Result.HotelList != null && rtn.Result.HotelList.Count > 0)
                 {//存储酒店名称
-
+                    HotelInsert(rtn.Result.HotelList);
                 }
             }
             return result;
         }
+
+        /// <summary>
+        /// 酒店新增
+        /// </summary>
+        private static void HotelInsert(List<XiWanHotelInfo> list)
+        {
+            var xwList = new List<XiWanHotelInfo>();
+            list?.ForEach(x =>
+            {
+                xwList.Add(x);
+                if (xwList.Count == 10)
+                {
+                    var wxIds = xwList.Select(a => a.HotelId).ToList();
+                    var hDb = new H_HotelInfoAccess();
+                    var dbList = hDb.Query().Where(h => h.HIOutId.In(wxIds) && h.HIOutType == 2)?.ToList()?.Select(h => h.HIOutId)?.ToList();
+                    wxIds = wxIds.Where(a => !dbList.Contains(a))?.ToList();
+
+                    var addList = new List<H_HotelInfoModel>();
+                    wxIds?.ForEach(a =>
+                    {
+                        var hotel = xwList.FirstOrDefault(xx => xx.HotelId == a);
+                        var model = new H_HotelInfoModel()
+                        {
+                            HIOutId = hotel.HotelId,
+                            HIOutType = 2,
+                            HIName = hotel.HotelName,
+                            HIAddName = "喜玩新增"
+                        };
+                        addList.Add(model);
+                    });
+                    if (addList != null && addList.Count > 0)
+                    {
+                        hDb.AddBatch(addList);
+                    }
+                }
+            });
+
+        }
+
 
         /// <summary>
         /// 酒店详情

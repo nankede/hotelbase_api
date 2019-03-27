@@ -371,6 +371,7 @@ namespace HotelBase.Api.Entity.Tables
 
         /// <summary>
         /// 外部类型
+        /// 1 亚朵 2 喜玩
         /// </summary>
         [Column("HIOutType")]
         public int HIOutType { get; set; } = 0;

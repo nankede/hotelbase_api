@@ -119,7 +119,7 @@ namespace HotelBase.Api.Common.SignMothed
         public int PageSize { get; set; }
         /// <summary> 页码 </summary>
         public int PageIndex { get; set; }
-        /// <summary> 总个数 </summary>
+        /// <summary> 总页数 </summary>
         public int PageCount { get; set; }
     }
 }
