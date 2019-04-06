@@ -62,6 +62,41 @@ namespace HotelBase.Api.Common
                 return reader.ReadToEnd();
             }
         }
+
+        /// <summary>
+        /// Post调用webapi
+        /// </summary>
+        /// <param name="url">地址,地址栏参数同param,例如http://172.28.20.19:8066/api/PublicAPI/CheckSetPassWord?applicationID=1&telephone=1</param>
+        /// <param name="param">参数,例如"{applicationID:\"1\",telephone:\"1\"}"</param>
+        /// <returns></returns>
+        public static T HttpPost<T>(string url, string param, string cntenttype = "")
+        {
+            //ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
+            Encoding encoding = Encoding.UTF8;
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.Accept = "text/html, application/xhtml+xml, */*";
+            request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
+            request.ContentLength = 0;
+            if (!string.IsNullOrEmpty(param))
+            {
+                byte[] buffer = encoding.GetBytes(param);
+                request.ContentLength = buffer.Length;
+                request.GetRequestStream().Write(buffer, 0, buffer.Length);
+            }
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            var rtnStr = string.Empty;
+            using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+            {
+                rtnStr = reader.ReadToEnd();
+            }
+            if (!string.IsNullOrEmpty(rtnStr))
+            {
+                return rtnStr.ToObject<T>();
+            }
+            return default(T);
+        }
+
         #endregion
 
         #region 调用API接口
