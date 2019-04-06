@@ -73,9 +73,9 @@ namespace HotelBase.Api.Controllers
                             appId = AtourAuth_APPID,
                             sign = sign,
                             hotelId = item.order.hotelId,
-                            mebId = item.order.hotelId,
-                            roomTypeId = item.order.hotelId,
-                            roomNum = item.order.hotelId,
+                            mebId = item.order.mebId,
+                            roomTypeId = item.order.roomTypeId,
+                            roomNum = item.order.roomNum,
                             roomRateList = item.order.roomRateList,
                             arrival = item.order.arrival,
                             assureTime = item.order.assureTime,
@@ -100,7 +100,7 @@ namespace HotelBase.Api.Controllers
                                 var serialid = data["msg"]["atourOrderNo"].ToString();
 
                                 result.Code = DataResultType.Sucess;
-                                result.Data = new { Result = serialid };
+                                result.Data = Encrypt.DESEncrypt(serialid);
                                 #region 操作订单
                                 //var logmodel = new HO_HotelOrderLogModel();
                                 ////日志
@@ -179,6 +179,59 @@ namespace HotelBase.Api.Controllers
                         return result;
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return result;
+        }
+
+
+
+        /// <summary>
+        /// 操作订单
+        /// </summary>
+        /// <remarks>
+        /// des加密，key单独提供
+        /// </remarks>
+        /// <param name="orderid">加密过的orderid</param>
+        /// <returns></returns>
+        public DataResult OperatAtourOrder(string orderid)
+        {
+            var result = new DataResult();
+            try
+            {
+                //解密
+                var escorderid = Encrypt.DESDecrypt(orderid);
+                Dictionary<string, string> dic = new Dictionary<string, string>();
+                dic.Add("atourOrderNo", escorderid);
+                dic.Add("appId", AtourAuth_APPID);
+                var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourAuth_URL + "baoku/order/cancelOrder";
+                var orderrequest = new 
+                {
+                    atourOrderNo= escorderid,
+                    appId = AtourAuth_APPID,
+                    sign = sign
+                };
+                var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
+                if (!string.IsNullOrWhiteSpace(orderresponse))
+                {
+                    var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
+                    if (data["msg"].ToString().ToLower() == "success")
+                    {
+                        var inresult = data["result"].ToString();
+
+                        result.Code = DataResultType.Sucess;
+                        result.Data = inresult;
+                    }
+                    else
+                    {
+                        result.Code = DataResultType.Fail;
+                    }
+                }
+                
             }
             catch (Exception ex)
             {
