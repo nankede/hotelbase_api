@@ -1,6 +1,7 @@
 ﻿using HotelBase.Api.Entity.CommonModel.Enum;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace HotelBase.Api.Entity.CommonModel
         /// </summary>
         public object Data { get; set; }
 
+        public Stopwatch Sw { get; set; } = Stopwatch.StartNew();
         #endregion
     }
 }

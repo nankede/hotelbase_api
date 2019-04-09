@@ -89,7 +89,7 @@ namespace HotelBase.Api.Common
         #endregion
 
         #region 使用指定字符集将byte[]转换成string
-        
+
         /// <summary>
         /// 将byte[]转换成string
         /// </summary>
@@ -831,7 +831,8 @@ namespace HotelBase.Api.Common
         #endregion
 
         #region ,分割的字符串转List
-        public static List<int> IntList(string str ,bool isZero=false) {
+        public static List<int> IntList(string str, bool isZero = false)
+        {
             if (string.IsNullOrEmpty(str))
             {
                 return null;
@@ -841,8 +842,8 @@ namespace HotelBase.Api.Common
             var strArr = str.Split(',');
             foreach (var s in strArr)
             {
-                int i = ConvertHelper.ToInt32(s,0);
-                if (!isZero && i==0)
+                int i = ConvertHelper.ToInt32(s, 0);
+                if (!isZero && i == 0)
                 {
                     continue;
                 }
@@ -852,5 +853,15 @@ namespace HotelBase.Api.Common
         }
 
         #endregion
+    }
+
+    public static class BaseHelper
+    {
+        public static int ToInt(this string obj)
+        {
+            int.TryParse(obj, out int i);
+            return i;
+        }
+
     }
 }

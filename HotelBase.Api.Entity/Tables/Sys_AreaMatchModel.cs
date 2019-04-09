@@ -56,5 +56,12 @@ namespace HotelBase.Api.Entity.Tables
         /// </summary>
         [Column("OutProvName")]
         public string OutProvName { get; set; } = string.Empty;
+
+
+        /// <summary>
+        /// 外部城市编号
+        /// </summary>
+        [Column("OutCityCode")]
+        public string OutCityCode { get; set; } = string.Empty;
     }
 }

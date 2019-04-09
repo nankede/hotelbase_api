@@ -10,6 +10,7 @@ using HotelBase.Api.Entity.Tables;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -23,6 +24,9 @@ namespace HotelBase.Api.Service
     public class XiWanApiService
     {
         private static string HotelListUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotelPage.ashx";
+        private static string HotelDetailUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotelInfo.ashx";
+        private static string HotelDPriceUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotel.ashx";
+        //http://{地址}/hotelapi/hotel/ GetHotelInfo.ashx
 
         /// <summary>
         /// 获取酒店列表
@@ -32,22 +36,44 @@ namespace HotelBase.Api.Service
         {
             var result = new DataResult()
             {
-                Data = $"{maxId + top};"
+                Message = "1",
             };
-            var request = new XiWanPageRequest { PageIndex = 1, PageSize = 100 };
-            var rtn = XiWanAPI.XiWanPost<XiWanHotelList, XiWanPageRequest>(request, HotelListUrl);
-            result.Data = rtn?.Result;
+            var sw = Stopwatch.StartNew();
             var totalCount = 0;
+            var data = GetXiWanHotel(1);
 
-            if (rtn != null && rtn.Result != null)
+            if (data != null)
             {
-                totalCount = rtn.Result.PageCount;
-                if (rtn.Result.HotelList != null && rtn.Result.HotelList.Count > 0)
+                totalCount = data.PageCount;
+
+                //第一页
+                if (data.HotelList != null && data.HotelList.Count > 0)
                 {//存储酒店名称
-                    HotelInsert(rtn.Result.HotelList);
+                    HotelInsert(data.HotelList);
+                }
+
+                //后面几页
+                for (var i = 2; i <= totalCount; i++)
+                {
+                    data = GetXiWanHotel(i);
+                    if (data != null && data.HotelList != null && data.HotelList.Count > 0)
+                    {//存储酒店名称
+                        HotelInsert(data.HotelList);
+                    }
+                    result.Message = $"{i}";
+                    Thread.Sleep(1000);
                 }
             }
+            result.Message += $"||时间：" + sw.ElapsedMilliseconds.ToString();
+
             return result;
+        }
+
+        public static XiWanHotelList GetXiWanHotel(int pageIndex)
+        {
+            var request = new XiWanPageRequest { PageIndex = pageIndex, PageSize = 100 };
+            var rtn = XiWanAPI.XiWanPost<XiWanHotelList, XiWanPageRequest>(request, HotelListUrl);
+            return rtn?.Result;
         }
 
         /// <summary>
@@ -83,11 +109,11 @@ namespace HotelBase.Api.Service
                     {
                         hDb.AddBatch(addList);
                     }
+                    xwList = new List<XiWanHotelInfo>();
                 }
             });
 
         }
-
 
         /// <summary>
         /// 酒店详情
@@ -100,153 +126,233 @@ namespace HotelBase.Api.Service
             var result = new DataResult();
 
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 2).Top(top).OrderBy(h => h.HIOutId)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
+                result.Message = "无数据";
 
             }
+            var provList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 2).ToList();
 
             hotelList.ForEach(x =>
             {
-                var dic = new Dictionary<string, string>();
-                dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
-                dic.Add("hotelId", x.HIOutId.ToString());
-                var sign = AtourSignUtil.GetSignUtil(dic);
-                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getHotel";
-                url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&hotelId=" + x.HIOutId + "&sign=" + sign;
-                var rtn = ApiHelper.HttpGet(url)?.ToObject<AtourHotelDetailResponse>();
-                var hotel = rtn?.result;
-                if (hotel?.hotelId > 0)
+                var request = new XiWanHotelDetailRequest { HotelId = x.HIOutId };
+                var rtn = XiWanAPI.XiWanPost<XiWanHotelDetail, XiWanHotelDetailRequest>(request, HotelDetailUrl);
+                var hotel = rtn?.Result;
+                if (hotel?.HotelId > 0)
                 {
+                    var city = AddCityCode(hotel.CityCode, hotel.CityName) ?? new Sys_AreaInfoModel();
+                    var prov = new Sys_AreaInfoModel();
+                    if (city.pid > 0)
+                    {
+                        prov = provList.FirstOrDefault(p => p.id == city.pid) ?? new Sys_AreaInfoModel();
+                    }
                     hDb.Update().Set(h =>
-                    h.HIName == hotel.name
-                    && h.HIUpdateName == "亚朵数据更新"
+                    h.HIGdLonLat == hotel.Position
+                    && h.HIName == hotel.HotelName
+                    && h.HIHotelIntroduction == hotel.Intro
+                    && h.HIAddress == hotel.Address
+                    && h.HILinkPhone == hotel.Tel
+                    && h.HICityId == city.id
+                    && h.HICity == (city.name ?? string.Empty)
+                    && h.HIProvinceId == prov.id
+                    && h.HIProvince == (prov.name ?? string.Empty)
+                    && h.HIUpdateName == "喜玩详情接口更新"
                     && h.HIUpdateTime == DateTime.Now
                     ).Where(h => h.Id == x.Id).Execute();
-
-                    //更新图片
-                    PidInit(hotel, x.Id);
-
                     //会员 暂时未开发
                 }
                 else
                 {
-                    result.Message = rtn?.msg ?? "系统异常";
+                    result.Message = rtn?.Msg ?? "系统异常";
                 }
-            });
 
+                //房型等
+                var d1 = Xw_HotelPrice(x.Id);
+                result.Message += $"||{x.Id}:{d1.Message}";
+                Thread.Sleep(500);
+
+            });
             return result;
         }
 
-
         /// <summary>
-        /// 图片初始化，带验证图片是否存在
+        /// 城市
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="id"></param>
-        private static void PidInit(HotelyList x, int id, int type = 20201)
+        /// <param name="code"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static Sys_AreaInfoModel AddCityCode(string code, string name)
         {
-            var hpDb = new H_HotelPictureAccess();
-            x.pictures?.ForEach(p =>
+            var city = new Sys_AreaInfoModel();
+            var oldList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 3).ToList();
+            var modellist = new List<Sys_AreaMatchModel>();
+            var matchDb = new Sys_AreaMatchAccess();
+            var cityMatch = matchDb.Query().Where(x => x.OutType == 2 && x.OutCityCode == code).FirstOrDefault();
+            if (cityMatch == null || cityMatch.Id <= 0)
             {
-                if (!string.IsNullOrEmpty(p))
+                city = oldList.FirstOrDefault(x => x.name == name);
+                cityMatch = new Sys_AreaMatchModel
                 {
-                    var pic = hpDb.Query().Where(hp => hp.HPUrl == p && hp.HIId == id).FirstOrDefault();
-                    if (pic == null || pic.Id <= 0)
-                    {
-                        pic = new H_HotelPictureModel
-                        {
-                            HPOutId = x.hotelId,
-                            HPAddName = string.Empty,
-                            HIId = id,
-                            HPAddTime = DateTime.Now,
-                            HPIsValid = 1,
-                            HPType = type,
-                            HPUpdateName = string.Empty,
-                            HPUpdateTime = DateTime.Now,
-                            HPUrl = p,
-                        };
-                        hpDb.Add(pic);
-                    }
-                }
-            });
+                    OutCityCode = code,
+                    OutCityName = name,
+                    OutType = 2,
+                    HbId = city?.id ?? 0
+                };
+                matchDb.Add(cityMatch);
+            }
+            else
+            {
+                city = oldList.FirstOrDefault(x => x.id == cityMatch.HbId);
+            }
+            return city;
         }
 
-        //房型 baoku/hotel/getRoomTypeList
         /// <summary>
-        /// 酒店房型
+        /// 喜玩价格
         /// </summary>
-        /// <param name="maxId"></param>
-        /// <param name="top"></param>
         /// <returns></returns>
-        public static DataResult GetRoomType(int id, int top)
+        public static DataResult Xw_HotelPrice(long id = 0)
         {
-            var result = new DataResult();
-            result.Data = string.Empty;
+            var rtn = new DataResult();
+
+            var roomDb = new H_HotelRoomAccess();
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId >= id && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
-            if (hotelList == null || hotelList.Count == 0)
+            var query = hDb.Query().Where(h => h.HIOutType == 2);
+            if (id > 0)
             {
-                result.Message = "未查询到酒店";
-                return result;
+                query.Where(x => x.Id == id);
             }
-            var indexCount = 0;
+            var hotelList = query.ToList();
             hotelList.ForEach(x =>
             {
-                var dic = new Dictionary<string, string>();
-                dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
-                dic.Add("hotelId", x.HIOutId.ToString());
-
-                var sign = AtourSignUtil.GetSignUtil(dic);
-                var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomTypeList";
-                url += "?appId=" + AtourSignUtil.AtourAuth_APPID + "&hotelId=" + x.HIOutId + "&sign=" + sign;
-                var rtn = ApiHelper.HttpGet(url)?.ToObject<YdRoomTypeResponse>();
-                var list = rtn?.result;
-                if (list?.Count > 0)
+                var hotel = GetHotelPrice(x.HIOutId);
+                if (hotel != null && hotel.HotelId > 0)
                 {
-                    var listId = list.Select(l => l.roomTypeId).ToList();
-                    var db = new H_HotelRoomAccess();
-                    var room = db.Query().Where(r => r.HIId == x.Id).ToList();
-                    var updateList = room?.Where(r => listId.Contains(r.HROutId) && r.HROutType == 1)?.ToList();
-                    result.Data += $"[{indexCount++}]{x.HIName}新增房型{list.Count()}个；";
-                    list.ForEach(l =>
+                    rtn.Message += $"房型{  hotel?.Rooms.Count()}个；";
+                    hotel?.Rooms.ForEach(r =>
                     {
-                        var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HROutType == 1)?.FirstOrDefault();
-                        if (baseRoom == null || baseRoom.Id <= 0)
+                        var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
+                        if (oldRoom == null || oldRoom.Id <= 0)
                         {
-                            db.Add(new H_HotelRoomModel
+                            oldRoom = new H_HotelRoomModel
                             {
-                                Id = 0,
+                                HROutId = r.RoomTypeId.ToInt(),
                                 HIId = x.Id,
-                                HROutType = 1,
-                                HROutId = l.roomTypeId,
-                                HRName = l.roomTypeName ?? string.Empty,
-                                HRRoomSIze = string.Empty,
-                                HRAddName = "亚朵新增",
+                                Id = 0,
+                                HRAddName = "喜玩新增",
                                 HRAddTime = DateTime.Now,
-                                HRBedSize = GetBedSize(l.bedRemark),
-                                HRBedType = 0,
+                                HRBedSize = 0,
+                                HRBedType = r.BedType,//需要转化
                                 HRFloor = string.Empty,
                                 HRIsValid = 1,
+                                HRName = r.RoomName ?? String.Empty,
+                                HROutType = 2,
                                 HRPersonCount = 0,
+                                HRRoomSIze = r.Description ?? string.Empty,
                                 HRUpdateName = string.Empty,
-                                HRUpdateTime = DateTime.Now,
-                                HRWindowsType = 0
-                            });
+                                HRUpdateTime = new DateTime(2000, 1, 1),
+                                HRWindowsType = 0//需要转化
+                            };
+                            oldRoom.Id = (int)roomDb.Add(oldRoom);
                         }
-                        //是否要修改
+                        else
+                        {//修改暂时不弄
+
+                        }
+
+                        if (oldRoom.Id > 0)
+                        {
+                            var rrDb = new H_HotelRoomRuleAccess();
+                            //价格策略
+                            var oldRule = rrDb.Query().Where(rr => rr.HRId == oldRoom.Id && rr.HRROutCode == r.RoomId && rr.HRROutType == 2).FirstOrDefault();
+                            if (oldRule == null || oldRule.Id <= 0)
+                            {
+                                oldRule = new H_HotelRoomRuleModel
+                                {
+                                    Id = 0,
+                                    HRROutCode = r.RoomId,
+                                    HIId = x.Id,
+                                    HRId = oldRoom.Id,
+                                    HRRAddName = "喜玩新增",
+                                    HRRAddTime = DateTime.Now,
+                                    HRRBreakfastRule = 0,
+                                    HRRBreakfastRuleName = string.Empty,
+                                    HRRCancelRule = 0,
+                                    HRRCancelRuleName = string.Empty,
+                                    HRRIsValid = 1,
+                                    HRRName = r.RoomName ?? String.Empty,
+                                    HRROutId = 0,
+                                    HRROutType = 2,
+                                    HRRSourceId = 0,
+                                    HRRSourceName = string.Empty,
+                                    HRRSupplierId = 0,
+                                    HRRSupplierName = string.Empty,
+                                    HRRUpdateName = string.Empty,
+                                    HRRUpdateTime = new DateTime(2000, 1, 1),
+                                };
+                                oldRule.Id = (int)rrDb.Add(oldRule);
+                            }
+                            if (oldRule.Id > 0)
+                            {
+                                var pDb = new H_HoteRulePriceAccess();
+                                r.Rates?.ForEach(p =>
+                                {
+                                    var dateInit = ConvertHelper.ToInt32(p.Date.ToString("yyyyMMdd"), 0);
+                                    var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
+                                    if (price == null || price.Id <= 0)
+                                    {//新增价格和库存
+                                        price = new H_HoteRulePriceModel
+                                        {
+                                            Id = 0,
+                                            HIId = x.Id,
+                                            HRId = oldRoom.Id,
+                                            HRPAddName = "喜玩新增",
+                                            HRPAddTime = DateTime.Now,
+                                            HRPContractPrice = p.Price,
+                                            HRPDate = p.Date,
+                                            HRPCount = p.AvailableNum,
+                                            HRPDateInt = dateInit,
+                                            HRPIsValid = 1,
+                                            HRPRetainCount = 0,
+                                            HRPSellPrice = p.Price,
+                                            HRPStatus = 1,
+                                            HRPUpdateName = string.Empty,
+                                            HRPUpdateTime = new DateTime(2000, 1, 1),
+                                            HRRId = oldRule.Id
+                                        };
+                                        price.Id = (int)pDb.Add(price);
+                                    }
+                                    else
+                                    {
+                                        var sql = pDb.Update().Where(pr => pr.Id == price.Id);
+                                        sql.Set(pr => pr.HRPCount == p.AvailableNum);
+                                        sql.Set(pr => pr.HRPContractPrice == p.Price
+                                        && pr.HRPSellPrice == p.Price
+                                        && pr.HRPUpdateName == "喜玩更新"
+                                        && pr.HRPUpdateTime == DateTime.Now
+                                        ).Execute();
+                                    }
+                                });
+                            }
+                        }
                     });
                 }
-                else
-                {
-                    result.Message = rtn?.msg ?? "系统异常";
-                }
-                //查询最近三天的价格和库存
-                var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 3);
-                result.Data += rrRtn.Data?.ToString() ?? string.Empty;
             });
+            return new DataResult();
+        }
 
-            return result;
+        public static XiWanPriceHotel GetHotelPrice(int outId)
+        {
+            var request = new XiWanPriceRequest
+            {
+                HotelId = outId,
+                ComeDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                LeaveDate = DateTime.Now.AddDays(3).ToString("yyyy-MM-dd"),
+            };
+            var rtn = XiWanAPI.XiWanPost<XiWanPriceHotel, XiWanPriceRequest>(request, HotelDPriceUrl);
+            var hotel = rtn?.Result;
+            return hotel;
         }
 
         /// <summary>
@@ -268,282 +374,6 @@ namespace HotelBase.Api.Service
             return 0;
         }
 
-
-
-        //房价 baoku/hotel/getRoomRateList
-        /// <summary>
-        /// 酒店价格
-        /// </summary>
-        /// <param name="maxId"></param>
-        /// <param name="top"></param>
-        /// <returns></returns>
-        public static DataResult GetRoomRate(int id, DateTime start, int top)
-        {
-            var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomRateList";
-
-            var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId == id && h.HIOutType == 1).OrderBy(h => h.HIOutId)?.ToList();
-            if (hotelList == null || hotelList.Count == 0)
-            {
-                result.Message = "未查询到酒店";
-                return result;
-            }
-
-
-            //hotelId 是店ID
-            //roomTypeId  是0房间类型ID（取接口4中的对应字段即可）
-            //roomRateTypeId 否0旧版本价格类型ID(18; 协议价格 28:"【中介预付】ota-npp；29: "【中介现付】ota - npc"，41,:"【中介预付】卖价"等，可兼容)
-            //mebId 否12345会员ID；HRS渠道可以不传（不传则输出该渠道下所有房价数据），其它渠道必传；
-            //start 是"2018-08-10"开始日期，格式： yyyy - MM - dd
-            //end 是"2018-08-11"结束日期，格式：yyyy - MM - dd
-            hotelList.ForEach(x =>
-            {
-                SetRoomRate(x, start, top);
-            });
-
-            return result;
-        }
-
-        /// <summary>
-        /// 单酒店处理房型价格
-        /// </summary>
-        /// <param name="hotel"></param>
-        private static DataResult SetRoomRate(H_HotelInfoModel hotel, DateTime start, int top)
-        {
-            var result = new DataResult();
-            result.Data = string.Empty;
-            start = start.Year <= 2000 ? DateTime.Now : start;
-            var roomdb = new H_HotelRoomAccess();
-            var roomType = roomdb.Query().Where(x => x.HIId == hotel.Id && x.HROutType == 1).ToList();
-            roomType?.ForEach(x =>
-            {
-                var priceRtn = GetYdPrice(hotel.HIOutId, start, top, x);//价格
-                var storeRtn = GetYdStore(hotel.HIOutId, start, top, x);//库存
-                if (priceRtn != null && priceRtn.result != null)
-                {
-                    var rrDb = new H_HotelRoomRuleAccess();
-                    var pDb = new H_HoteRulePriceAccess();
-                    priceRtn.result.ForEach(p =>
-                    {
-                        var oldRule = rrDb.Query().Where(rr => rr.HRROutId == p.roomTypeId && rr.HRROutType == 1
-                        && rr.HRRName == p.roomRateTypeName
-                        ).FirstOrDefault();
-                        var newStore = storeRtn?.result?.FirstOrDefault(ns => ns.roomTypeId == p.roomTypeId && ns.accDate == p.accDate);
-
-                        if (oldRule == null)
-                        {
-                            oldRule = new H_HotelRoomRuleModel
-                            {
-                                HRRName = p.roomRateTypeName ?? string.Empty,
-                                HRROutId = p.roomTypeId,
-                                HRRIsValid = 1,
-                                HRROutType = 1,
-                                HIId = hotel.Id,
-                                Id = 0,
-                                HRId = x.Id,
-                                HRRAddName = "亚朵新增",
-                                HRRAddTime = DateTime.Now,
-                                HRRBreakfastRule = 0,
-                                HRRBreakfastRuleName = string.Empty,
-                                HRRCancelRule = 0,
-                                HRRCancelRuleName = string.Empty,
-                                HRRSourceId = 0,
-                                HRRSourceName = string.Empty,
-                                HRRSupplierId = 0,
-                                HRRSupplierName = string.Empty,
-                                HRRUpdateName = string.Empty,
-                                HRRUpdateTime = DateTime.Now
-                            };
-                            oldRule.Id = (int)rrDb.Add(oldRule);
-                        }
-                        if (oldRule != null && oldRule.Id > 0)
-                        {
-                            var date = DateTime.MinValue;
-                            DateTime.TryParse(p.accDate, out date);
-                            var dateInit = ConvertHelper.ToInt32(date.ToString("yyyyMMdd"), 0);
-                            var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
-                            if (price == null || price.Id <= 0)
-                            {//新增价格和库存
-                                price = new H_HoteRulePriceModel
-                                {
-                                    Id = 0,
-                                    HIId = hotel.Id,
-                                    HRId = x.Id,
-                                    HRPAddName = "亚朵新增",
-                                    HRPAddTime = DateTime.Now,
-                                    HRPContractPrice = p.roomRate,
-                                    HRPDate = date,
-                                    HRPCount = newStore?.inventoryNum ?? 0,
-                                    HRPDateInt = dateInit,
-                                    HRPIsValid = 1,
-                                    HRPRetainCount = 0,
-                                    HRPSellPrice = p.roomRate,
-                                    HRPStatus = 1,
-                                    HRPUpdateName = string.Empty,
-                                    HRPUpdateTime = DateTime.Now,
-                                    HRRId = oldRule.Id
-                                };
-                                price.Id = (int)pDb.Add(price);
-                            }
-                            else
-                            {
-                                var sql = pDb.Update().Where(pr => pr.Id == price.Id);
-                                if (newStore != null)
-                                {
-                                    sql.Set(pr => pr.HRPCount == newStore.inventoryNum);
-                                }
-                                sql.Set(pr => pr.HRPContractPrice == p.roomRate
-                                && pr.HRPSellPrice == p.roomRate
-                                && pr.HRPUpdateName == "朵拉更新"
-                                && pr.HRPUpdateTime == DateTime.Now
-                                ).Execute();
-                            }
-                        }
-                    });
-                }
-            });
-            return result;
-        }
-
-        /// <summary>
-        /// 获取亚朵价格
-        /// </summary>
-        /// <param name="hotelId"></param>
-        /// <param name="start"></param>
-        /// <param name="top"></param>
-        /// <param name="room"></param>
-        /// <returns></returns>
-        private static YdRoomRateResponse GetYdPrice(int hotelId, DateTime start, int top, H_HotelRoomModel room)
-        {
-            var dic = new Dictionary<string, string>
-            {
-                { "appId", AtourSignUtil.AtourAuth_APPID },
-                { "hotelId",hotelId.ToString() },
-                { "roomTypeId", room.HROutId.ToString() },
-                { "mebId", AtourSignUtil.AtourAuth_MebId },
-
-                { "start", start.ToString("yyyy-MM-dd") },
-                { "end", start.AddDays(top).ToString("yyyy-MM-dd") }
-            };
-            //hotelId 是店ID
-            //roomTypeId  是0房间类型ID（取接口4中的对应字段即可）
-            //roomRateTypeId 否0旧版本价格类型ID(18; 协议价格 28:"【中介预付】ota-npp；29: "【中介现付】ota - npc"，41,:"【中介预付】卖价"等，可兼容)
-            //mebId 否12345会员ID；HRS渠道可以不传（不传则输出该渠道下所有房价数据），其它渠道必传；
-            //start 是"2018-08-10"开始日期，格式： yyyy - MM - dd
-            //end 是"2018-08-11"结束日期，格式：yyyy - MM - dd
-
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomRateList";
-            url += GetUrlPara(dic);
-            return ApiHelper.HttpGet(url)?.ToObject<YdRoomRateResponse>();
-        }
-
-        /// <summary>
-        /// 获取亚朵库存
-        /// </summary>
-        /// <param name="hotelId"></param>
-        /// <param name="start"></param>
-        /// <param name="top"></param>
-        /// <param name="room"></param>
-        /// <returns></returns>
-        private static YdRoomStoreResponse GetYdStore(int hotelId, DateTime start, int top, H_HotelRoomModel room)
-        {
-            var dic = new Dictionary<string, string>
-            {
-                { "appId", AtourSignUtil.AtourAuth_APPID },
-                { "hotelId",hotelId.ToString() },
-                { "roomTypeId", room.HROutId.ToString() },
-                { "start", start.ToString("yyyy-MM-dd") },
-                { "end", start.AddDays(top).ToString("yyyy-MM-dd") }
-            };
-            //hotelId 是店ID
-            //roomTypeId  是0房间类型ID（取接口4中的对应字段即可）
-            //roomRateTypeId 否0旧版本价格类型ID(18; 协议价格 28:"【中介预付】ota-npp；29: "【中介现付】ota - npc"，41,:"【中介预付】卖价"等，可兼容)
-            //mebId 否12345会员ID；HRS渠道可以不传（不传则输出该渠道下所有房价数据），其它渠道必传；
-            //start 是"2018-08-10"开始日期，格式： yyyy - MM - dd
-            //end 是"2018-08-11"结束日期，格式：yyyy - MM - dd
-
-            var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomInventoryList";
-            url += GetUrlPara(dic);
-            return ApiHelper.HttpGet(url)?.ToObject<YdRoomStoreResponse>();
-        }
-
-        /// <summary>
-        /// 获取Url参数
-        /// </summary>
-        /// <param name="dic"></param>
-        /// <returns></returns>
-        private static string GetUrlPara(Dictionary<string, string> dic)
-        {
-            var rtn = string.Empty;
-            var sign = AtourSignUtil.GetSignUtil(dic);
-            dic.Add("sign", sign);
-            foreach (var d in dic)
-            {
-                if (!string.IsNullOrEmpty(d.Value))
-                {
-                    rtn += $"&{d.Key}={d.Value}";
-                }
-            }
-            rtn = $"?{rtn.TrimStart('&')}";
-            return rtn;
-        }
-
-        //库存 baoku/hotel/getRoomInventoryList、
-
-        #region 城市匹配
-
-
-        /// <summary>
-        /// 获取城市列表
-        /// </summary>
-        /// <returns></returns>
-
-        public static DataResult GetCityList()
-        {
-            var result = new DataResult();
-            var url = AtourSignUtil.AtourAuth_URL + "city/getCityList";
-            Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("appId", AtourSignUtil.AtourAuth_APPID);
-            var sign = AtourSignUtil.GetSignUtil(dic);
-            var citylist = ApiHelper.HttpGet(url + "?appId=" + AtourSignUtil.AtourAuth_APPID + "&sign=" + sign);
-            if (string.IsNullOrWhiteSpace(citylist))
-            {
-                result = new DataResult { Code = DataResultType.Fail, Message = "系统异常" };
-            }
-
-            var oldList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 3).ToList();
-            var modellist = new List<Sys_AreaMatchModel>();
-            var data = citylist.ToObject<AtourCityResponse>();
-            data?.result?.ForEach(n =>
-            {
-                var old = oldList.FirstOrDefault(x => x.name == n.cityName.Replace("市", ""));
-                var model = new Sys_AreaMatchModel
-                {
-                    OutProvId = 0,
-                    OutProvName = n.provinceName,
-                    OutCityId = n.cityId,
-                    OutCityName = n.cityName,
-                    HbId = old?.id ?? 0,
-                    OutType = 1
-                };
-                var db = new Sys_AreaMatchAccess();
-                var m = db.Query().Where(x => x.OutType == 1 && x.OutCityId == n.cityId).FirstOrDefault();
-                if (m == null || m.Id <= 0)
-                {
-                    db.Add(model);
-                    result.Data += $"{old?.id}:{n.cityName}；";
-                }
-                else
-                {
-
-                }
-            });
-
-            return result;
-        }
-
-        #endregion
     }
 
     public class XiWanHotelRequest
@@ -576,6 +406,219 @@ namespace HotelBase.Api.Service
         /// 名称
         /// </summary>
         public string HotelName { get; set; }
+
+    }
+
+    /// <summary>
+    /// 喜玩酒店详情
+    /// </summary>
+    public class XiWanHotelDetail
+    {
+        /// <summary> 酒店id </summary>
+        public int HotelId { get; set; }
+        /// <summary> 酒店名称 </summary>
+        public string HotelName { get; set; }
+        /// <summary> 酒店地址 </summary>
+        public string Address { get; set; }
+        /// <summary> 城市编号 </summary>
+        public string CityCode { get; set; }
+        /// <summary> 城市名称 </summary>
+        public string CityName { get; set; }
+        /// <summary> 酒店简介 </summary>
+        public string Intro { get; set; }
+        /// <summary> 酒店电话 </summary>
+        public string Tel { get; set; }
+        /// <summary> 酒店百度地图坐标 </summary>
+        public string Position { get; set; }
+
+        //        酒店id HotelId int 是       酒店id
+        //酒店名称    HotelName string 是         酒店名称
+        //酒店地址    Address
+        //    string 是       酒店地址
+        //城市编号    CityCode
+        //    string 是       城市编号
+        //城市名称    CityName string 是       城市名称
+        //酒店简介    Intro string 是       酒店简介
+        //酒店电话    Tel string 是       酒店电话
+        //酒店坐标    Position string 否       酒店百度地图坐标
+
+
+    }
+
+    /// <summary>
+    /// 价格查询请求
+    /// </summary>
+    public class XiWanPriceRequest
+    {
+        //酒店id HotelId int 是	54279	酒店id
+        //入住日期    ComeDate DateTime    是	 2017-02-10	  日期格式2017-02-10
+        //离店日期 LeaveDate   DateTime 是	2017-02-12	日期格式2017-02-12
+        //房型id RoomId  string 否	 93258_937991	  查询具体房型
+        //产品类别    ProductSerial string 否	11	当RoomId不为空是此项必填
+
+        /// <summary>  酒店id </summary>
+        public int HotelId { get; set; }
+        /// <summary> 入住日期  </summary>
+        public string ComeDate { get; set; }
+        /// <summary> 离店日期  </summary>
+        public string LeaveDate { get; set; }
+        /// <summary>  房型id </summary>
+        public string RoomId { get; set; }
+        /// <summary>产品类别 当RoomId不为空是此项必填  </summary>
+        public string ProductSerial { get; set; }
+
+    }
+
+    /// <summary>
+    /// 价格查询响应
+    /// </summary>
+    public class XiWanPriceHotel
+    {
+        /// <summary>  酒店id </summary>
+        public int HotelId { get; set; }
+        /// <summary>  酒店名称 </summary>
+        public string HotelName { get; set; }
+        /// <summary>   </summary>
+        public string Address { get; set; }
+
+        /// <summary>   </summary>
+        public string CityCode { get; set; }
+        /// <summary>  酒店备注信息 </summary>
+        public string CityName { get; set; }
+        /// <summary>   </summary>
+        public string Remark { get; set; }
+
+        /// <summary>  房型列表 </summary>
+        public List<XiWanPriceRoom> Rooms { get; set; }
+
+    }
+
+    public class XiWanPriceRoom
+    {
+        public string RoomId { get; set; }
+        public string RoomTypeId { get; set; }
+
+        public string RoomName { get; set; }
+        /// <summary>
+        /// 房型描述
+        /// </summary>
+        public string Description { get; set; }
+        /// <summary>
+        ///  价格计划名称
+        /// </summary>
+        public string RatePlanName { get; set; }
+        /// <summary>
+        /// 查询日期内最少早餐，存在每天早餐不一样,-1为含早但份数不确定
+        /// </summary>
+        public int BreakfastNum { get; set; }
+        /// <summary>
+        /// 大床 = 0, 双床 = 1, 大床或双床 = 2, 三床 = 3, 四床 = 4, 单人床 = 5,
+        /// 上下铺 = 6, 通铺 = 7, 榻榻米 = 8, 水床 = 9, 圆床 = 10, 拼床 = 11, 子母床 = 12,
+        /// 多床 = 13, 其他床型 = 999
+        /// </summary>
+        public int BedType { get; set; }
+        /// <summary>
+        /// 网络 未知 = 0,无 = 1,免费 = 2,收费 = 3,     部分收费 = 4
+        /// </summary>
+        public int Net { get; set; }
+        /// <summary>
+        /// wifi 未知 = 0,有 = 1,无 = 2,
+        /// </summary>
+        public int Wifi { get; set; }
+        /// <summary>
+        /// 预定状态
+        /// </summary>
+        public bool Status { get; set; }
+        /// <summary>
+        /// 未知 = 0,有窗 = 1,无窗 = 2,部分有窗 = 3,内窗 = 4
+        /// </summary>
+        public int Window { get; set; }
+        /// <summary>
+        /// 现预付 0 预付 1 现付
+        /// </summary>
+        public int PaymentType { get; set; }
+        /// <summary>
+        /// 产品类别
+        /// </summary>
+        public int ProductSerial { get; set; }
+        /// <summary>
+        /// 适用客人类型  GuestType Enum    是 所有 = 0, 内宾 = 1, 外宾 = 2
+        /// </summary>
+        public int GuestType { get; set; }
+        /// <summary>
+        /// 提前预订天数
+        /// </summary>
+        public int PreBookDay { get; set; }
+        /// <summary>
+        /// 连住天数
+        /// </summary>
+        public int MinDays { get; set; }
+        /// <summary>
+        /// 每日报价信息
+        /// </summary>
+        public List<XiWanPriceResponse> Rates { get; set; }
+
+        //Room内容
+        //名称  编码 类型  必填 示例  描述
+        //房型id    RoomId string 是       房型id
+        //基础房型id  RoomTypeId string 是         基础房型id
+        //房型名称    RoomName string 是       房型名称
+        //房型描述    Description string 否       房型描述
+        //价格计划名称  RatePlanName string 是       价格计划名称
+        //早餐数 BreakfastNum int 是       查询日期内最少早餐，存在每天早餐不一样,-1为含早但份数不确定
+        //床型  BedType Enum
+
+        //    是 大床 = 0, 双床 = 1, 大床或双床 = 2, 三床 = 3, 四床 = 4, 单人床 = 5, 上下铺 = 6, 通铺 = 7, 榻榻米 = 8, 水床 = 9, 圆床 = 10, 拼床 = 11, 子母床 = 12, 多床 = 13, 其他床型 = 999
+        //网络类型 Net Enum 是       未知 = 0,无 = 1,免费 = 2,收费 = 3,
+        //        部分收费 = 4
+        //Wifi信息 Wifi    Enum 是       未知 = 0,有 = 1,无 = 2,
+        //Window信息 Window  Enum 是       未知 = 0,有窗 = 1,无窗 = 2,部分有窗 = 3,内窗 = 4
+        //可订状态 Status  bool 是       可订状态，查询日期里全部可订
+        //现预付 PaymentType Enum    是 PrePay = 0（暂只有预付）, SelfPay = 1
+        //产品类别 ProductSerial   int 是       产品类别
+        //适用客人类型  GuestType Enum    是 所有 = 0, 内宾 = 1, 外宾 = 2
+        //提前预订天数 PreBookDay
+        //int 是       价格计划的预订规则，提前预订天数
+        //连住天数    MinDays int 是       价格计划的预订规则，连住天数
+        //每日报价信息  Rates NightRate[] 是 每日报价信息
+
+
+
+    }
+
+    /// <summary>
+    /// 价格
+    /// </summary>
+    public class XiWanPriceResponse
+    {
+        /// <summary>
+        /// 日期
+        /// </summary>
+        public DateTime Date { get; set; }
+        /// <summary>
+        /// 协议价格
+        /// </summary>
+        public decimal Price { get; set; }
+        /// <summary>
+        /// 可订状态      True为可订
+        /// </summary>
+        public bool Status { get; set; }
+        /// <summary>
+        /// 参考库存数，暂无效，为0
+        /// </summary>
+        public int AvailableNum { get; set; }
+        /// <summary>
+        ///  当天的早餐份数，-1为含早但份数不确定，-99表示此日期的的早餐无效，并以Room的早餐数为准
+        /// </summary>
+        public int BreakfastNum { get; set; }
+
+        //NightRate内容
+        //名称  编码 类型  必填 示例  描述
+        //日期  Date DateTime    是 格式yyyy-MM-dd
+        //协议价格    Price decimal 是         协议价格
+        //可订状态    Status bool 是       True为可订
+        //参考库存数   AvailableNum int 是       参考库存数，暂无效，为0
+        //早餐数 BreakfastNum int 是       当天的早餐份数，-1为含早但份数不确定，-99表示此日期的的早餐无效，并以Room的早餐数为准
 
     }
 }

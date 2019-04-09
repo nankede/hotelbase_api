@@ -277,5 +277,11 @@ namespace HotelBase.Api.Entity.Tables
         /// </summary>
         [Column("HRROutId")]
         public int HRROutId { get; set; } = 0;
+
+        /// <summary>
+        /// 外部stringId
+        /// </summary>
+        [Column("HRROutCode")]
+        public string HRROutCode { get; set; } = string.Empty;
     }
 }
