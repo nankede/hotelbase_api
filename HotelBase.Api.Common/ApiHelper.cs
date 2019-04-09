@@ -52,6 +52,10 @@ namespace HotelBase.Api.Common
             request.Method = "POST";
             request.Accept = "text/html, application/xhtml+xml, */*";
             request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
+            //if (!string.IsNullOrWhiteSpace(cntenttype))
+            //{
+            //    request.ContentType = cntenttype;
+            //}
 
             byte[] buffer = encoding.GetBytes(param);
             request.ContentLength = buffer.Length;
