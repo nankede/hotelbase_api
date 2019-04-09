@@ -101,7 +101,7 @@ namespace HotelBase.Api.Service
                             HIOutId = hotel.HotelId,
                             HIOutType = 2,
                             HIName = hotel.HotelName,
-                            HIAddName = "喜玩新增"
+                            HIAddName = "喜玩新增",
                         };
                         addList.Add(model);
                     });
@@ -286,8 +286,8 @@ namespace HotelBase.Api.Service
                                     HRROutType = 2,
                                     HRRSourceId = 0,
                                     HRRSourceName = string.Empty,
-                                    HRRSupplierId = 0,
-                                    HRRSupplierName = string.Empty,
+                                    HRRSupplierId = 3,
+                                    HRRSupplierName = "喜玩/致和",
                                     HRRUpdateName = string.Empty,
                                     HRRUpdateTime = new DateTime(2000, 1, 1),
                                 };
