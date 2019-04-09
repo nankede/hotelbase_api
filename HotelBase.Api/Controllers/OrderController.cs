@@ -6,6 +6,7 @@ using System.IO;
 using System.Web;
 using System.Web.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using HotelBase.Api.Entity.Request.Order;
 using System.Linq;
 using System.Collections.Generic;
@@ -13,7 +14,6 @@ using System.Reflection;
 using HotelBase.Api.Common.SignMothed;
 using HotelBase.Api.Common;
 using HotelBase.Api.Entity.Response.Order;
-using Newtonsoft.Json.Linq;
 using HotelBase.Api.Entity.Tables;
 using HotelBase.Api.Service;
 using HotelBase.Api.Common.Extension;
@@ -48,23 +48,29 @@ namespace HotelBase.Api.Controllers
                 {
                     jsonvalue = sr.ReadToEnd();
                 }
-                if (string.IsNullOrWhiteSpace(jsonvalue))
+                if (!string.IsNullOrWhiteSpace(jsonvalue))
                 {
                     JavaScriptSerializer js = new JavaScriptSerializer() { MaxJsonLength = Int32.MaxValue };
-                    var item = js.Deserialize<AtourCreateOrderRequest>(jsonvalue);
+                    var item = js.Deserialize<OrderModel>(jsonvalue);
                     if (item != null)
                     {
                         Dictionary<string, string> dic = new Dictionary<string, string>();
                         dic.Add("appId", AtourAuth_APPID);
-                        //foreach (var item in entity)
-                        //{
-                        Type entityType = item.order.GetType();
+                        Type entityType = item.GetType();
                         PropertyInfo[] properties = entityType.GetProperties();
                         for (int i = 0; i < properties.Length; i++)
                         {
-                            if (!string.IsNullOrWhiteSpace(properties[i].GetValue(item.order, null).ToString()))
+                            if (!string.IsNullOrWhiteSpace(properties[i].GetValue(item, null).ToString()))
                             {
-                                dic.Add(properties[i].Name, properties[i].GetValue(item.order, null).ToString());
+                                if (properties[i].Name == "roomRateList")
+                                {
+                                    dic.Add(properties[i].Name, JsonConvert.SerializeObject(properties[i].GetValue(item, null).ToString()));
+                                }
+                                else
+                                {
+                                    dic.Add(properties[i].Name, properties[i].GetValue(item, null).ToString());
+                                }
+
                             }
                         }
                         var sign = AtourSignUtil.GetSignUtil(dic);
@@ -72,26 +78,34 @@ namespace HotelBase.Api.Controllers
                         {
                             appId = AtourAuth_APPID,
                             sign = sign,
-                            hotelId = item.order.hotelId,
-                            mebId = item.order.mebId,
-                            roomTypeId = item.order.roomTypeId,
-                            roomNum = item.order.roomNum,
-                            roomRateList = item.order.roomRateList,
-                            arrival = item.order.arrival,
-                            assureTime = item.order.assureTime,
-                            departure = item.order.departure,
-                            mobile = item.order.mobile,
-                            contactName = item.order.contactName,
-                            guestName = item.order.guestName,
+                            hotelId = item.hotelId,
+                            mebId = item.mebId,
+                            roomTypeId = item.roomTypeId,
+                            roomNum = item.roomNum,
+                            roomRateList = JsonConvert.SerializeObject(item.roomRateList),
+                            arrival = item.arrival,
+                            assureTime = item.assureTime,
+                            departure = item.departure,
+                            mobile = item.mobile,
+                            contactName = item.contactName,
+                            guestName = item.guestName,
                             source = 10,
                             subSource = 85,
-                            roomRateTypeId = item.order.roomRateTypeId,
-                            thirdOrderNo = item.order.thirdOrderNo,
-                            couponsList = item.order.couponsList,
-                            remark = item.order.remark,
+                            roomRateTypeId = item.roomRateTypeId,
+                            thirdOrderNo = item.thirdOrderNo,
+                            couponsList = item.couponsList,
+                            remark = item.remark,
                         };
                         var url = AtourAuth_URL + "baoku/order/createOrder";
-                        var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
+                        string parm = "";
+                        PropertyInfo[] request = orderrequest.GetType().GetProperties();
+                        for (int i = 0; i < request.Length; i++)
+                        {
+                            parm += request[i].Name + "=" + request[i].GetValue(orderrequest, null).ToString() + "&";
+
+                        }
+                        parm = parm.Substring(0, parm.Length - 1);
+                        var orderresponse = ApiHelper.HttpPost(url, parm, "application/x-www-form-urlencoded");
                         if (!string.IsNullOrWhiteSpace(orderresponse))
                         {
                             var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
@@ -173,11 +187,11 @@ namespace HotelBase.Api.Controllers
                             else
                             {
                                 result.Code = DataResultType.Fail;
+                                result.Message = data["msg"].ToString();
                             }
                         }
-                        //}
-                        return result;
                     }
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -209,9 +223,9 @@ namespace HotelBase.Api.Controllers
                 dic.Add("appId", AtourAuth_APPID);
                 var sign = AtourSignUtil.GetSignUtil(dic);
                 var url = AtourAuth_URL + "baoku/order/cancelOrder";
-                var orderrequest = new 
+                var orderrequest = new
                 {
-                    atourOrderNo= escorderid,
+                    atourOrderNo = escorderid,
                     appId = AtourAuth_APPID,
                     sign = sign
                 };
@@ -231,7 +245,7 @@ namespace HotelBase.Api.Controllers
                         result.Code = DataResultType.Fail;
                     }
                 }
-                
+
             }
             catch (Exception ex)
             {
