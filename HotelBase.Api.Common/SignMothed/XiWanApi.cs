@@ -30,7 +30,7 @@ namespace HotelBase.Api.Common.SignMothed
         /// <param name="request"></param>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static XiWanResponse<T> XiWanPost<T,R>(R request, string url)
+        public static XiWanResponse<T> XiWanPost<T, R>(R request, string url)
         {
             var allRequest = new XiWanRequest<R>
             {
@@ -121,5 +121,11 @@ namespace HotelBase.Api.Common.SignMothed
         public int PageIndex { get; set; }
         /// <summary> 总页数 </summary>
         public int PageCount { get; set; }
+    }
+
+    public class XiWanHotelDetailRequest
+    {
+        public int HotelId { get; set; }
+
     }
 }

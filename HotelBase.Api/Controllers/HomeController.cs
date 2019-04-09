@@ -159,6 +159,44 @@ namespace HotelBase.Api.Controllers
             return Json(rtn);
         }
 
+        /// <summary>
+        /// 酒店列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> Xw_HotelDetail(int max, int top)
+        {
+            var rtn = XiWanApiService.GetHotelDetail(max, top);
+
+            return Json(rtn);
+        }
+        /// <summary>
+        /// 酒店列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<XiWanPriceHotel> GetHotelPrice(int id)
+        {
+            var rtn = XiWanApiService.GetHotelPrice(id);
+
+            return Json(rtn);
+        }
+
+        /// <summary>
+        /// 喜玩酒店价格
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<DataResult> Xw_HotelPrice(int id)
+        {
+            var rtn = XiWanApiService.Xw_HotelPrice(id);
+
+            return Json(rtn);
+        }
+
+        //
+
+
         #endregion
     }
 }
