@@ -21,7 +21,7 @@ namespace HotelBase.Api
                              .EnableSwagger(c =>
                              {
 
-                                 c.SingleApiVersion("v2", "Offer.Contract.Web");
+                                 c.SingleApiVersion("v2", "Hotel_Api");
 
                                  c.IncludeXmlComments(GetXmlCommentsPath());
                                  c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
@@ -30,7 +30,7 @@ namespace HotelBase.Api
                              })
                              .EnableSwaggerUi(c =>
                              {
-                                 c.InjectJavaScript(Assembly.GetExecutingAssembly(), "Offer.Contract.Web.Scripts.Swagger-Custom.js");
+                                 c.InjectJavaScript(Assembly.GetExecutingAssembly(), "HotelBase.Api.Scripts.Swagger-Custom.js");
                              });
 
             }
@@ -43,7 +43,7 @@ namespace HotelBase.Api
 
         protected static string GetXmlCommentsPath()
         {
-            var re = System.String.Format(@"{0}\bin\HotelBase.Api.XML", System.AppDomain.CurrentDomain.BaseDirectory);
+            var re = System.String.Format(@"{0}\bin\HotelBase.Api.xml", System.AppDomain.CurrentDomain.BaseDirectory);
             return re;
         }
     }
