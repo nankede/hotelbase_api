@@ -859,7 +859,8 @@ namespace HotelBase.Api.Common
     {
         public static int ToInt(this string obj)
         {
-            int.TryParse(obj, out int i);
+            var i = 0;
+            int.TryParse(obj, out i);
             return i;
         }
 
