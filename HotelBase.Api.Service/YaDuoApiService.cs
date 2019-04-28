@@ -373,12 +373,16 @@ namespace HotelBase.Api.Service
                                 HRRCancelRuleName = string.Empty,
                                 HRRSourceId = 0,
                                 HRRSourceName = string.Empty,
-                                HRRSupplierId = 0,
-                                HRRSupplierName = string.Empty,
+                                HRRSupplierId = 4,
+                                HRRSupplierName = "亚朵集团",
                                 HRRUpdateName = string.Empty,
                                 HRRUpdateTime = DateTime.Now
                             };
                             oldRule.Id = (int)rrDb.Add(oldRule);
+                        }
+                        else
+                        {
+                            rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 4).Execute();
                         }
                         if (oldRule != null && oldRule.Id > 0)
                         {
