@@ -50,7 +50,7 @@ namespace HotelBase.Api.Common
             Encoding encoding = Encoding.UTF8;
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = "POST";
-            request.Accept = "text/html, application/xhtml+xml, */*";
+            //request.Accept = "text/html, application/xhtml+xml, */*";
             request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
             //if (!string.IsNullOrWhiteSpace(cntenttype))
             //{

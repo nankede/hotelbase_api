@@ -140,64 +140,47 @@ namespace HotelBase.Api.DataAccess.Order
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static BasePageResponse<BookSearchResponse> GetHotelRuleList(BookSearchRequest request)
+        public static BookSearchResponse GetHotelRuleList(int hotelid, int roomid)
         {
-            var response = new BasePageResponse<BookSearchResponse>();
+            var response = new BookSearchResponse();
+            StringBuilder sbwhere = new StringBuilder();
+            //酒店id
+            if (hotelid > 0)
+            {
+                sbwhere.AppendFormat(" AND  b.Id = {0}", hotelid);
+            }
+            //房型id
+            if (roomid > 0)
+            {
+                sbwhere.AppendFormat(" AND  r.Id = {0}", roomid);
+            }
             StringBuilder sb = new StringBuilder();
-            sb.Append(@"SELECT
+            sb.AppendFormat(@"SELECT
 	                        b.Id AS HotelId,
 	                        r.Id AS HotelRoomId,
 	                        rr.Id AS HotelRoomRuleId,
-                            rr.HRRSupplierId AS HotelSupplierId,
 	                        b.HIName AS HotelName,
 	                        b.HIAddress AS HotelAddress,
 	                        b.HILinkPhone AS HotelTel,
 	                        r.HRName AS HotelRoomName,
+	                        rr.HRRName AS HotelRoomRuleName,
 	                        r.HRBedType AS HotelRoomBedType,
-	                        rr.HRRBreakfastRule AS HotelRoomBreakfastRule,
-                            rr.HRRBreakfastRuleName AS HotelRoomBreakfastRuleName,
+	                        rr.HRRBreakfastRuleName AS HotelRoomBreakfastRuleName,
 	                        rr.HRRCancelRule AS HotelRoomCancelRule,
 	                        rr.HRRCancelRuleName AS HotelRoomCancelRuleName,
-	                        rp.HRPSellPrice AS HoteRoomRuleSellPrice
+	                        rr.HRRSourceId AS HotelSupplierSourceId,
+	                        rr.HRRSourceName AS HotelSupplierSourceName,
+	                        rr.HRRSupplierId AS HotelSupplierId,
+	                        rr.HRRSupplierName AS HotelSupplierName
                         FROM
-	                        h_hotelinfo b
-                        INNER JOIN h_hotelroom r ON r.HIId = b.Id
-                        INNER JOIN h_hotelroomrule rr ON r.Id = rr.HRId
-                        INNER JOIN h_hoteruleprice rp ON rr.Id = rp.HRRId
+	                        h_hotelroomrule rr
+                        INNER JOIN h_hotelroom r ON r.Id = rr.HRId
+                        INNER JOIN h_hotelinfo b ON r.HIId = b.Id
                         WHERE
-	                        b.HIIsValid = 1
-                        AND r.HRIsValid = 1
-                        AND rr.HRRIsValid = 1
-                        AND rp.HRPIsValid = 1");
-            //订单号
-            if (!string.IsNullOrWhiteSpace(request.HotelName))
-            {
-                sb.AppendFormat(" AND b.HIName Like '%{0}%'", request.HotelName);
-            }
-            //酒店id
-            if (request.HotelId > 0)
-            {
-                sb.AppendFormat(" AND  b.Id = {0}", request.HotelId);
-            }
-            //入离店时间
-            if (!string.IsNullOrWhiteSpace(request.InBeginDate))
-            {
-                sb.AppendFormat(" AND rp.HRPDate >= '{0}'", request.InBeginDate);
-            }
-            //离店时间
-            if (!string.IsNullOrWhiteSpace(request.InEndDate))
-            {
-                sb.AppendFormat(" AND rp.HRPDate<'{0}'", Convert.ToDateTime(request.InEndDate).AddDays(1).ToShortDateString());
-            }
+	                        1 = 1 {0}", sbwhere.ToString());
+
             var list = MysqlHelper.GetList<BookSearchResponse>(sb.ToString());
-            var total = list?.Count ?? 0;
-            if (total > 0)
-            {
-                response.IsSuccess = 1;
-                response.Total = total;
-                response.List = list.Skip((request.PageIndex - 1) * request.PageSize).Take(request.PageSize)?.ToList();
-            }
-            return response;
+            return list.FirstOrDefault();
         }
 
 
@@ -293,11 +276,11 @@ namespace HotelBase.Api.DataAccess.Order
             para.Add("@HRRId", model.HRRId);
             para.Add("@HRRName", model.HRRName);
             para.Add("@HOSupplierId", model.HOSupplierId);
-            para.Add("@HOSupperlierName", model.HOSupperlierName);
+            para.Add("@HOSupperlierName", model.HOSupperlierName ?? "");
             para.Add("@HOSupplierSourceId", model.HOSupplierSourceId);
-            para.Add("@HOSupplierSourceName", model.HOSupplierSourceName);
-            para.Add("@HOOutSerialId", model.HOOutSerialId);
-            para.Add("@HOSupplierSerialId", model.HOSupplierSerialId);
+            para.Add("@HOSupplierSourceName", model.HOSupplierSourceName ?? "");
+            para.Add("@HOOutSerialId", model.HOOutSerialId ?? "");
+            para.Add("@HOSupplierSerialId", model.HOSupplierSerialId ?? "");
             para.Add("@HOStatus", model.HOStatus);
             para.Add("@HOPayStatus", model.HOPayStatus);
             para.Add("@HORoomCount", model.HORoomCount);
@@ -307,21 +290,21 @@ namespace HotelBase.Api.DataAccess.Order
             para.Add("@HoPlat2", model.HoPlat2);
             para.Add("@HOContractPrice", model.HOContractPrice);
             para.Add("@HOSellPrice", model.HOSellPrice);
-            para.Add("@HOCustomerName", model.HOCustomerName);
-            para.Add("@HOCustomerMobile", model.HOCustomerMobile);
-            para.Add("@HOLinkerName", model.HOLinkerName);
-            para.Add("@HOLinkerMobile", model.HOLinkerMobile);
-            para.Add("@HORemark", model.HORemark);
+            para.Add("@HOCustomerName", model.HOCustomerName ?? "");
+            para.Add("@HOCustomerMobile", model.HOCustomerMobile ?? "");
+            para.Add("@HOLinkerName", model.HOLinkerName ?? "");
+            para.Add("@HOLinkerMobile", model.HOLinkerMobile ?? "");
+            para.Add("@HORemark", model.HORemark ?? "");
             para.Add("@HOCheckInDate", model.HOCheckInDate);
             para.Add("@HOCheckOutDate", model.HOCheckOutDate);
-            para.Add("@HOLastCheckInTime", model.HOLastCheckInTime);
+            para.Add("@HOLastCheckInTime", model.HOLastCheckInTime ?? "");
             para.Add("@HOAddId", model.HOAddId);
-            para.Add("@HOAddName", model.HOAddName);
+            para.Add("@HOAddName", model.HOAddName ?? "");
             para.Add("@HOAddDepartId", model.HOAddDepartId);
-            para.Add("@HOAddDepartName", model.HOAddDepartName);
+            para.Add("@HOAddDepartName", model.HOAddDepartName ?? "");
             para.Add("@HOAddTime", model.HOAddTime);
             para.Add("@HOUpdateId", model.HOUpdateId);
-            para.Add("@HOUpdateName", model.HOUpdateName);
+            para.Add("@HOUpdateName", model.HOUpdateName ?? "");
             para.Add("@HOUpdateTime ", model.HOUpdateTime);
             var id = MysqlHelper.Insert(sql.ToString(), para);
             //_DicList = null;

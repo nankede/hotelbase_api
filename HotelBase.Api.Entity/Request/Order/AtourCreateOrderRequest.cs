@@ -82,6 +82,31 @@ namespace HotelBase.Api.Entity.Request.Order
         public OrderModel order { get; set; }
     }
 
+    public class CreateRequset
+    {
+        /// <summary>
+        /// 供应商来源
+        /// </summary>
+        public int supplierSourceId { get; set; }
+
+        /// <summary>
+        /// 供应商来源
+        /// </summary>
+        public string supplierSource { get; set; }
+
+        /// <summary>
+        /// 分销商来源
+        /// </summary>
+        public int distributorSourceId { get; set; }
+
+        /// <summary>
+        /// 分销商来源
+        /// </summary>
+        public string distributorSource { get; set; }
+
+        public OrderModel orderModel { get; set; }
+    }
+
     /// <summary>
     /// 亚朵订单列表
     /// </summary>
@@ -172,6 +197,16 @@ namespace HotelBase.Api.Entity.Request.Order
         /// 备注
         /// </summary>
         public string remark { get; set; }
+
+        /// <summary>
+        /// 总结算价
+        /// </summary>
+        public string basePrice { get; set; }
+
+        /// <summary>
+        /// 总价
+        /// </summary>
+        public string roomPrice { get; set; }
     }
 
     public class OrderRequest

@@ -37,9 +37,9 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static BasePageResponse<BookSearchResponse> GetHotelRuleList(BookSearchRequest request)
+        public static BookSearchResponse GetHotelRuleList(int hotelid, int roomid)
         {
-            return Ho_HotelOrderAccess.GetHotelRuleList(request);
+            return Ho_HotelOrderAccess.GetHotelRuleList(hotelid, roomid);
         }
 
         /// <summary>
