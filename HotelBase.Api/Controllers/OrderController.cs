@@ -120,13 +120,12 @@ namespace HotelBase.Api.Controllers
                             int j = 0;
                             foreach (var t in request)
                             {
-                                if (j > 0)
-                                    parm.Append("&");
+                                if (j > 0) parm.Append("&");
                                 parm.AppendFormat("{0}={1}", t.Name, t.GetValue(orderrequest, null));
                                 j++;
                             }
 
-                            
+
                             var orderresponse = ApiHelper.HttpPost(url, parm.ToString(), "application/x-www-form-urlencoded");
                             if (!string.IsNullOrWhiteSpace(orderresponse))
                             {
@@ -137,6 +136,64 @@ namespace HotelBase.Api.Controllers
 
                                     result.Code = DataResultType.Sucess;
                                     result.Data = Encrypt.DESEncrypt(serialid);
+                                    #region 创建订单
+                                    var hotelinfo = OrderBll.GetHotelRuleList(item.hotelId, item.roomTypeId);
+                                    if (hotelinfo != null)
+                                    {
+                                        var newmodel = new HO_HotelOrderModel
+                                        {
+                                            HOCustomerSerialId = ExtOrderNum.Gener("Z", 1),
+                                            HIId = item.hotelId,
+                                            HName = hotelinfo.HotelName,
+                                            HRId = hotelinfo.HotelRoomId,
+                                            HRName = hotelinfo.HotelRoomName,
+                                            HRRId = hotelinfo.HotelRoomRuleId,
+                                            HRRName = hotelinfo.HotelRoomRuleName,
+                                            HOSupplierId = hotelinfo.HotelSupplierId,
+                                            HOSupperlierName = hotelinfo.HotelSupplierName,
+                                            HODistributorId = createrequset.distributorSourceId,
+                                            HODistributorName = createrequset.distributorSource,
+                                            HOSupplierSourceId = createrequset.supplierSourceId,
+                                            HOSupplierSourceName = createrequset.supplierSource,
+                                            HODistributorSerialId = item.thirdOrderNo,
+                                            HOOutSerialId = serialid,
+                                            HORoomCount = item.roomNum,
+                                            HONight = item.roomNum,
+                                            HOLinkerName = item.contactName,
+                                            HOCustomerName = item.guestName,
+                                            HOContractPrice = Convert.ToDecimal(item.basePrice),
+                                            HOSellPrice = Convert.ToDecimal(item.roomPrice),
+                                            HOCheckInDate = Convert.ToDateTime(item.arrival),
+                                            HOCheckOutDate = Convert.ToDateTime(item.departure),
+                                            HOLastCheckInTime = item.assureTime,
+                                            HOAddId = 0,
+                                            HOAddName = "系统",
+                                            HOAddDepartId = 0,
+                                            HOAddDepartName = "系统",
+                                            HOAddTime = DateTime.Now,
+                                            HORemark = item.remark,
+                                            HOUpdateId = 0,
+                                            HOUpdateName = "系统",
+                                            HOUpdateTime = DateTime.MinValue
+                                        };
+                                        //日志
+                                        var logmodel = new HO_HotelOrderLogModel
+                                        {
+                                            HOLOrderId = newmodel.HOCustomerSerialId,
+                                            HOLLogType = 1,//订单日志
+                                            HOLRemark = "创建订单：" + newmodel.HOCustomerSerialId,
+                                            HOLAddId = 0,
+                                            HOLAddName = "系统",
+                                            HOLAddDepartId = 0,
+                                            HOLAddDepartName = "系统",
+                                            HOLAddTime = DateTime.Now
+                                        };
+                                        OrderLogBll.AddOrderModel(logmodel);
+                                        var response = OrderBll.AddOrderModel(newmodel);
+                                        result.Code = DataResultType.Sucess;
+                                        result.Data = newmodel.HOCustomerSerialId;
+                                    }
+                                    #endregion
                                 }
                                 else
                                 {
