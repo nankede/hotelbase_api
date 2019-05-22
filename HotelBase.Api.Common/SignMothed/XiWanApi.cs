@@ -128,4 +128,36 @@ namespace HotelBase.Api.Common.SignMothed
         public int HotelId { get; set; }
 
     }
+
+    public class XiWanOrderRequest
+    {
+        public string DistributeOrderNo { get; set; }
+
+        public int HotelId { get; set; }
+
+        public string RoomId { get; set; }
+
+        public string RoomName { get; set; }
+
+        public int ProductSerial { get; set; }
+
+        public DateTime ComeDate { get; set; }
+
+        public DateTime LeaveDate { get; set; }
+
+        public int RoomNum { get; set; }
+
+        public string LastArriveTime { get; set; }
+
+        public decimal TotalPrice { get; set; }
+
+        public string ContactName { get; set; }
+
+        public string ContactMobile { get; set; }
+
+        public string[] GuestNames { get; set; }
+
+        public string NoteToHotel { get; set; }
+
+    }
 }
