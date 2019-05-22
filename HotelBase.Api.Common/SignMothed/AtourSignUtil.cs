@@ -14,17 +14,17 @@ namespace HotelBase.Api.Common.SignMothed
     public class AtourSignUtil
     {
 
-        //public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApi"];
-        //public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appid"];
-        //public static string AtourAuth_MebId = ConfigurationManager.AppSettings["mebid"];
+        public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApi"];
+        public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appid"];
+        public static string AtourAuth_MebId = ConfigurationManager.AppSettings["mebid"];
 
-        //private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
+        private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
 
-        public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApiTest"];
-        public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appidtest"];
-        public static string AtourAuth_MebId = ConfigurationManager.AppSettings["mebidtest"];
+        //public static string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApiTest"];
+        //public static string AtourAuth_APPID = ConfigurationManager.AppSettings["appidtest"];
+        //public static string AtourAuth_MebId = ConfigurationManager.AppSettings["mebidtest"];
 
-        private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["keytest"];
+        //private static string AtourAuth_APPKEY = ConfigurationManager.AppSettings["keytest"];
 
 
         /// <summary>
