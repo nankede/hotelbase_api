@@ -371,9 +371,9 @@ namespace HotelBase.Api.Service
                                 HRRBreakfastRuleName = string.Empty,
                                 HRRCancelRule = 0,
                                 HRRCancelRuleName = string.Empty,
-                                HRRSourceId = 0,
-                                HRRSourceName = string.Empty,
-                                HRRSupplierId = 4,
+                                HRRSourceId = 10104,
+                                HRRSourceName = "集团直连",
+                                HRRSupplierId = 1,
                                 HRRSupplierName = "亚朵集团",
                                 HRRUpdateName = string.Empty,
                                 HRRUpdateTime = DateTime.Now
@@ -422,7 +422,7 @@ namespace HotelBase.Api.Service
                                 }
                                 sql.Set(pr => pr.HRPContractPrice == p.roomRate
                                 && pr.HRPSellPrice == p.roomRate
-                                && pr.HRPUpdateName == "朵拉更新"
+                                && pr.HRPUpdateName == "亚朵更新"
                                 && pr.HRPUpdateTime == DateTime.Now
                                 ).Execute();
                             }
