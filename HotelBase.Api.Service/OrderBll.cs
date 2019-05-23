@@ -33,6 +33,16 @@ namespace HotelBase.Api.Service
         }
 
         /// <summary>
+        /// 获取订单详情
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public static HO_HotelOrderModel GetModel(string seridid)
+        {
+            return Ho_HotelOrderAccess.GetModel(seridid);
+        }
+
+        /// <summary>
         /// 预定资源查询
         /// </summary>
         /// <param name="request"></param>
@@ -40,6 +50,17 @@ namespace HotelBase.Api.Service
         public static BookSearchResponse GetHotelRuleList(int hotelid, int roomid)
         {
             return Ho_HotelOrderAccess.GetHotelRuleList(hotelid, roomid);
+        }
+
+
+        /// <summary>
+        /// 预定资源查询
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static BookSearchResponse GetSupplierHotelList(int roomid)
+        {
+            return Ho_HotelOrderAccess.GetSupplierHotelList(roomid);
         }
 
         /// <summary>

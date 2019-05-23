@@ -133,6 +133,24 @@ namespace HotelBase.Api.DataAccess.Order
             return data;
         }
 
+        /// <summary>
+        /// 订单详情
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public static HO_HotelOrderModel GetModel(string serialid)
+        {
+            if (string.IsNullOrWhiteSpace(serialid))
+            {
+                return null;
+            }
+            var para = new DynamicParameters();
+            var sql = "SELECT * FROM ho_hotelorder  WHERE  HOCustomerSerialId=@HOCustomerSerialId  LIMIT 1;   ";
+            para.Add("@HOCustomerSerialId", serialid);
+            var data = MysqlHelper.GetModel<HO_HotelOrderModel>(sql, para);
+            return data;
+        }
+
 
 
         /// <summary>
@@ -145,15 +163,49 @@ namespace HotelBase.Api.DataAccess.Order
             var response = new BookSearchResponse();
             StringBuilder sbwhere = new StringBuilder();
             //酒店id
-            if (hotelid > 0)
-            {
-                sbwhere.AppendFormat(" AND  b.Id = {0}", hotelid);
-            }
+            sbwhere.AppendFormat(" AND  b.Id = {0}", hotelid);
             //房型id
-            if (roomid > 0)
-            {
-                sbwhere.AppendFormat(" AND  r.Id = {0}", roomid);
-            }
+            sbwhere.AppendFormat(" AND  r.Id = {0}", roomid);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat(@"SELECT
+	                        b.Id AS HotelId,
+	                        r.Id AS HotelRoomId,
+	                        rr.Id AS HotelRoomRuleId,
+	                        b.HIName AS HotelName,
+	                        b.HIAddress AS HotelAddress,
+	                        b.HILinkPhone AS HotelTel,
+	                        r.HRName AS HotelRoomName,
+	                        rr.HRRName AS HotelRoomRuleName,
+	                        r.HRBedType AS HotelRoomBedType,
+	                        rr.HRRBreakfastRuleName AS HotelRoomBreakfastRuleName,
+	                        rr.HRRCancelRule AS HotelRoomCancelRule,
+	                        rr.HRRCancelRuleName AS HotelRoomCancelRuleName,
+	                        rr.HRRSourceId AS HotelSupplierSourceId,
+	                        rr.HRRSourceName AS HotelSupplierSourceName,
+	                        rr.HRRSupplierId AS HotelSupplierId,
+	                        rr.HRRSupplierName AS HotelSupplierName
+                        FROM
+	                        h_hotelroomrule rr
+                        INNER JOIN h_hotelroom r ON r.Id = rr.HRId
+                        INNER JOIN h_hotelinfo b ON r.HIId = b.Id
+                        WHERE
+	                        1 = 1 {0}", sbwhere.ToString());
+
+            var list = MysqlHelper.GetList<BookSearchResponse>(sb.ToString());
+            return list.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 获取供应商房型资源
+        /// </summary>
+        /// <param name="hotelid"></param>
+        /// <param name="roomid"></param>
+        public static BookSearchResponse GetSupplierHotelList(int roomid)
+        {
+            var response = new BookSearchResponse();
+            StringBuilder sbwhere = new StringBuilder();
+            //房型id
+            sbwhere.AppendFormat(" AND  r.Id = {0}", roomid);
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat(@"SELECT
 	                        b.Id AS HotelId,

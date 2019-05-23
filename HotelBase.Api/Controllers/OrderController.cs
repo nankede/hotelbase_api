@@ -20,6 +20,7 @@ using HotelBase.Api.Common.Extension;
 using HotelBase.Api.Entity.CommonModel.Enum;
 using System.Text;
 using HotelBase.Api.DataAccess.Resource;
+using HotelBase.Api.Entity.Models;
 
 namespace HotelBase.Api.Controllers
 {
@@ -39,7 +40,7 @@ namespace HotelBase.Api.Controllers
         /// 创建订单
         /// </summary>
         /// <returns></returns>
-        public DataResult CreateAtourOrder([FromBody] string jsonvalue)
+        public DataResult CreateAtourOrder([FromBody] string jsonvalue, string orderseridid = "")
         {
             var result = new DataResult();
             try
@@ -62,100 +63,22 @@ namespace HotelBase.Api.Controllers
                     {
                         var item = createrequset.orderModel;
 
-
-
-                        #region 创建订单
-                        var hotelinfo = OrderBll.GetHotelRuleList(item.hotelId, item.roomTypeId);
-                        if (hotelinfo != null)
-                        {
-                            var newmodel = new HO_HotelOrderModel
-                            {
-                                HOCustomerSerialId = ExtOrderNum.Gener("Z", 1),
-                                HIId = item.hotelId,
-                                HName = hotelinfo.HotelName,
-                                HRId = hotelinfo.HotelRoomId,
-                                HRName = hotelinfo.HotelRoomName,
-                                HRRId = hotelinfo.HotelRoomRuleId,
-                                HRRName = hotelinfo.HotelRoomRuleName,
-                                HOSupplierId = hotelinfo.HotelSupplierId,
-                                HOSupperlierName = hotelinfo.HotelSupplierName,
-                                HODistributorId = createrequset.distributorSourceId,
-                                HODistributorName = createrequset.distributorSource,
-                                HOSupplierSourceId = createrequset.supplierSourceId,
-                                HOSupplierSourceName = createrequset.supplierSource,
-                                HODistributorSerialId = item.thirdOrderNo,
-                                HORoomCount = item.roomNum,
-                                HONight = item.roomNum,
-                                HOLinkerName = item.contactName,
-                                HOCustomerName = item.guestName,
-                                HOContractPrice = Convert.ToDecimal(item.basePrice),
-                                HOSellPrice = Convert.ToDecimal(item.roomPrice),
-                                HOCheckInDate = Convert.ToDateTime(item.arrival),
-                                HOCheckOutDate = Convert.ToDateTime(item.departure),
-                                HOLastCheckInTime = item.assureTime,
-                                HOAddId = 0,
-                                HOAddName = "系统-喜玩",
-                                HOAddDepartId = 0,
-                                HOAddDepartName = "系统-喜玩",
-                                HOAddTime = DateTime.Now,
-                                HORemark = item.remark,
-                                HOUpdateId = 0,
-                                HOUpdateName = "系统",
-                                HOUpdateTime = DateTime.MinValue
-                            };
-                            //日志
-                            var logmodel = new HO_HotelOrderLogModel
-                            {
-                                HOLOrderId = newmodel.HOCustomerSerialId,
-                                HOLLogType = 1,//订单日志
-                                HOLRemark = "创建订单：" + newmodel.HOCustomerSerialId,
-                                HOLAddId = 0,
-                                HOLAddName = "系统",
-                                HOLAddDepartId = 0,
-                                HOLAddDepartName = "系统",
-                                HOLAddTime = DateTime.Now
-                            };
-                            OrderLogBll.AddOrderModel(logmodel);
-                            var response = OrderBll.AddOrderModel(newmodel);
-                            result.Code = DataResultType.Sucess;
-                            result.Data = newmodel.HOCustomerSerialId;
-                        }
-                        #endregion
-
-
-
-
-
-
-
-
                         //需要推送的订单
                         if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)//1 亚朵 2喜玩
                         {
                             issned = true;
                         }
-                        if (issned)
+                        //新增订单
+                        if (string.IsNullOrWhiteSpace(orderseridid))
                         {
-                            switch (createrequset.supplierSourceId)
-                            {
-                                case 1:
-                                    result = AtourOrder(createrequset);
-                                    break;
-                                case 2:
-                                    result = XiWanOrder(createrequset);
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            #region 创建订单
-                            var hotelinfo = OrderBll.GetHotelRuleList(item.hotelId, item.roomTypeId);
+                            var hotelinfo = OrderBll.GetSupplierHotelList(item.roomTypeId);
                             if (hotelinfo != null)
                             {
+                                #region 
                                 var newmodel = new HO_HotelOrderModel
                                 {
                                     HOCustomerSerialId = ExtOrderNum.Gener("Z", 1),
-                                    HIId = item.hotelId,
+                                    HIId = hotelinfo.HotelId,
                                     HName = hotelinfo.HotelName,
                                     HRId = hotelinfo.HotelRoomId,
                                     HRName = hotelinfo.HotelRoomName,
@@ -165,8 +88,8 @@ namespace HotelBase.Api.Controllers
                                     HOSupperlierName = hotelinfo.HotelSupplierName,
                                     HODistributorId = createrequset.distributorSourceId,
                                     HODistributorName = createrequset.distributorSource,
-                                    HOSupplierSourceId = createrequset.supplierSourceId,
-                                    HOSupplierSourceName = createrequset.supplierSource,
+                                    HOSupplierSourceId = hotelinfo.HotelSupplierSourceId,
+                                    HOSupplierSourceName = hotelinfo.HotelSupplierSourceName,
                                     HODistributorSerialId = item.thirdOrderNo,
                                     HORoomCount = item.roomNum,
                                     HONight = item.roomNum,
@@ -178,9 +101,9 @@ namespace HotelBase.Api.Controllers
                                     HOCheckOutDate = Convert.ToDateTime(item.departure),
                                     HOLastCheckInTime = item.assureTime,
                                     HOAddId = 0,
-                                    HOAddName = "系统",
+                                    HOAddName = "system",
                                     HOAddDepartId = 0,
-                                    HOAddDepartName = "系统",
+                                    HOAddDepartName = "system",
                                     HOAddTime = DateTime.Now,
                                     HORemark = item.remark,
                                     HOUpdateId = 0,
@@ -201,10 +124,71 @@ namespace HotelBase.Api.Controllers
                                 };
                                 OrderLogBll.AddOrderModel(logmodel);
                                 var response = OrderBll.AddOrderModel(newmodel);
-                                result.Code = DataResultType.Sucess;
-                                result.Data = newmodel.HOCustomerSerialId;
+                                orderseridid = newmodel.HOCustomerSerialId;
+                                #endregion
                             }
-                            #endregion
+                        }
+                        else
+                        {
+                            var order = OrderBll.GetModel(orderseridid);
+                            if (order.Id > 0)
+                            {
+                                var search = new OrderPriceSearchRequest
+                                {
+                                    HotelId = order.HIId,
+                                    RoomId = order.HRId,
+                                    RuleId = order.HRRId,
+                                    BDate = order.HOCheckInDate,
+                                    EDate = order.HOCheckOutDate
+                                };
+                                var roomRateList = new List<RateList>();
+                                var pricelist = HotelPriceBll.GetOrderList(search);
+                                if (pricelist != null && pricelist.Any())
+                                {
+                                    foreach (var price in pricelist)
+                                    {
+                                        var ite = new RateList
+                                        {
+                                            accDate= price.PriceDate,
+                                            roomRate=price.ContractPrice
+                                        };
+                                        roomRateList.Add(ite);
+                                    }
+                                }
+
+                                createrequset.orderModel = new OrderModel
+                                {
+                                    hotelId = order.HIId,
+                                    mebId = 0,
+                                    roomTypeId = order.HRId,
+                                    roomNum = order.HORoomCount,
+                                    roomRateList= roomRateList,
+                                    arrival= order.HOCheckInDate.ToString("yyyy-MM-dd"),
+                                    assureTime="",
+                                    departure= order.HOCheckOutDate.ToString("yyyy-MM-dd"),
+                                    mobile=order.HOLinkerMobile,
+                                    contactName=order.HOLinkerName,
+                                    guestName=order.HOCustomerName,
+                                    source=0,
+                                    subSource=0,
+                                    roomRateTypeId=28,
+                                    thirdOrderNo= order.HODistributorSerialId,
+                                    basePrice= order.HOContractPrice.ToString(),
+                                    roomPrice= order.HOSellPrice.ToString()
+                                };
+                            }
+                        }
+                        if (issned)
+                        {
+                            switch (createrequset.supplierSourceId)
+                            {
+                                case 1:
+                                    result = AtourOrder(createrequset);
+                                    break;
+                                case 2:
+                                    result = XiWanOrder(createrequset);
+                                    break;
+                            }
                         }
 
                     }

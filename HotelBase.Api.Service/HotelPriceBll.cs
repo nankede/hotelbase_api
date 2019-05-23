@@ -42,6 +42,31 @@ namespace HotelBase.Api.Service
         }
 
         /// <summary>
+        /// 价格查询
+        /// </summary>
+        /// <param name="request"></param>
+        public static List<HotelPriceModel> GetOrderList(OrderPriceSearchRequest request)
+        {
+            var db = new H_HoteRulePriceAccess();
+            var query = db.Query().Where(x => x.HRRId == request.RuleId)
+                .Where(x => x.HRPDate >= request.BDate && x.HRPDate < request.BDate)
+                .OrderByDescending(x => x.Id);
+            var list = query.ToList();
+
+            var response = list?.Select(x => new HotelPriceModel
+            {
+                Id = x.Id,
+                ContractPrice = x.HRPContractPrice,
+                Count = x.HRPCount,
+                PriceDate = x.HRPDate.ToString("yyyy-MM-dd"),
+                RetainCount = x.HRPRetainCount,
+                SellPrice = x.HRPSellPrice
+
+            })?.ToList();
+            return response;
+        }
+
+        /// <summary>
         /// 查询酒店房型详情
         /// </summary>
         /// <param name="model"></param>
