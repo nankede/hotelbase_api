@@ -621,6 +621,15 @@ namespace HotelBase.Api.Service
         //早餐数 BreakfastNum int 是       当天的早餐份数，-1为含早但份数不确定，-99表示此日期的的早餐无效，并以Room的早餐数为准
 
     }
+
+
+    public class XiWanOrderResponse
+    {
+        /// <summary>
+        /// 订单号
+        /// </summary>
+        public string OrderNo { get; set; }
+    }
 }
 
 

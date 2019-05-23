@@ -126,6 +126,35 @@ namespace HotelBase.Api.Entity.Models
 
     }
 
+
+    /// <summary>
+    /// 酒店查询
+    /// </summary>
+    public class OrderPriceSearchRequest : BaseRequest
+    {
+        /// <summary>
+        /// 酒店Id
+        /// </summary>
+        public int HotelId { get; set; }
+        /// <summary>
+        /// 房型
+        /// </summary>
+        public int RoomId { get; set; }
+        /// <summary>
+        /// 政策
+        /// </summary>
+        public int RuleId { get; set; }
+        /// <summary>
+        /// 月份
+        /// </summary>
+        public DateTime BDate { get; set; }
+        /// <summary>
+        /// 月份
+        /// </summary>
+        public DateTime EDate { get; set; }
+
+    }
+
     public class HotelPriceModel
     {
         public int Type { get; set; }
