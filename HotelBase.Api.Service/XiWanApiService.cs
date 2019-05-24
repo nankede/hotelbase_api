@@ -348,7 +348,7 @@ namespace HotelBase.Api.Service
             {
                 HotelId = outId,
                 ComeDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                LeaveDate = DateTime.Now.AddDays(3).ToString("yyyy-MM-dd"),
+                LeaveDate = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd"),
             };
             var rtn = XiWanAPI.XiWanPost<XiWanPriceHotel, XiWanPriceRequest>(request, HotelDPriceUrl);
             var hotel = rtn?.Result;
