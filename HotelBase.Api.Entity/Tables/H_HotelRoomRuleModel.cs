@@ -283,5 +283,13 @@ namespace HotelBase.Api.Entity.Tables
         /// </summary>
         [Column("HRROutCode")]
         public string HRROutCode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 喜玩产品类别
+        /// </summary>
+        [Column("HRRXwProductSerial")]
+        public int HRRXwProductSerial { get; set; } = 0;
+
+
     }
 }
