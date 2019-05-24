@@ -443,6 +443,7 @@ namespace HotelBase.Api.Service
         /// <returns></returns>
         private static YdRoomRateResponse GetYdPrice(int hotelId, DateTime start, int top, H_HotelRoomModel room)
         {
+            top = top < 7 ? 7 : top;
             var dic = new Dictionary<string, string>
             {
                 { "appId", AtourSignUtil.AtourAuth_APPID },
