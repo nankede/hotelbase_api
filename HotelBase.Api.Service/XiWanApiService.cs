@@ -61,7 +61,7 @@ namespace HotelBase.Api.Service
                         HotelInsert(data.HotelList);
                     }
                     result.Message = $"{i}";
-                    Thread.Sleep(1000);
+                    Thread.Sleep(100);
                 }
             }
             result.Message += $"||时间：" + sw.ElapsedMilliseconds.ToString();
@@ -170,7 +170,7 @@ namespace HotelBase.Api.Service
                 //房型等
                 var d1 = Xw_HotelPrice(x.Id);
                 result.Message += $"||{x.Id}:{d1.Message}";
-                Thread.Sleep(500);
+                Thread.Sleep(100);
 
             });
             return result;
