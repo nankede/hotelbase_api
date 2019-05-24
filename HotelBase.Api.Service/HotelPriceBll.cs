@@ -49,7 +49,7 @@ namespace HotelBase.Api.Service
         {
             var db = new H_HoteRulePriceAccess();
             var query = db.Query().Where(x => x.HRRId == request.RuleId)
-                .Where(x => x.HRPDate >= request.BDate && x.HRPDate < request.BDate)
+                .Where(x => x.HRPDate >= request.BDate && x.HRPDate < request.BDate.AddDays(1))
                 .OrderByDescending(x => x.Id);
             var list = query.ToList();
 

@@ -138,16 +138,19 @@ namespace HotelBase.Api.DataAccess.Order
         /// </summary>
         /// <param name="orderid"></param>
         /// <returns></returns>
-        public static HO_HotelOrderModel GetModel(string serialid)
+        public static SeaOrdrModel GetSeaModel(string serialid)
         {
             if (string.IsNullOrWhiteSpace(serialid))
             {
                 return null;
             }
             var para = new DynamicParameters();
-            var sql = "SELECT * FROM ho_hotelorder  WHERE  HOCustomerSerialId=@HOCustomerSerialId  LIMIT 1;   ";
+            var sql = @"SELECT hl.*,hi.HIOutId AS OutHotelId,hr.HROutId AS OutRoomId FROM ho_hotelorder hl  
+                        inner join h_hotelinfo hi on hl.HIId = hi.Id
+                        inner join h_hotelroom hr on hr.Id = hl.HRId
+                        WHERE HOCustomerSerialId = @HOCustomerSerialId  LIMIT 1; ";
             para.Add("@HOCustomerSerialId", serialid);
-            var data = MysqlHelper.GetModel<HO_HotelOrderModel>(sql, para);
+            var data = MysqlHelper.GetModel<SeaOrdrModel>(sql, para);
             return data;
         }
 

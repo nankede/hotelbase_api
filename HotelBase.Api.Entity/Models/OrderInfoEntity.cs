@@ -141,6 +141,14 @@ namespace HotelBase.Api.Entity.Models
 
     }
 
+
+    public class SeaOrdrModel : HO_HotelOrderModel
+    {
+        public string OutHotelId { get; set; }
+
+        public string OutRoomId { get; set; }
+    }
+
     public class OrderLogSearchRequset : BaseRequest
     {
         /// <summary>

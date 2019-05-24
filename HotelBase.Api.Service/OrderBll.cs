@@ -37,9 +37,9 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="orderid"></param>
         /// <returns></returns>
-        public static HO_HotelOrderModel GetModel(string seridid)
+        public static SeaOrdrModel GetModel(string seridid)
         {
-            return Ho_HotelOrderAccess.GetModel(seridid);
+            return Ho_HotelOrderAccess.GetSeaModel(seridid);
         }
 
         /// <summary>
