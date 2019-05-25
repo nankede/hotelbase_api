@@ -639,6 +639,19 @@ namespace HotelBase.Api.Service
         /// </summary>
         public string OrderNo { get; set; }
     }
+
+    public class XiWanOrderQueryResponse
+    {
+        /// <summary>
+        /// 状态
+        /// </summary>
+        public int Status { get; set; }
+    }
+
+    public class XiWanCancelOrderResponse
+    {
+        
+    }
 }
 
 

@@ -35,6 +35,9 @@ namespace HotelBase.Api.Controllers
 
         private static string HotelOrderUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/order/SubmitOrder.ashx";
         private static string HotelDPriceUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotel.ashx";
+        private static string HotelOrderQueryUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/order/QueryOrder.ashx";
+        private static string HotelCancelOrderUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/order/CancelOrderApply.ashx";
+
 
 
         /// <summary>
@@ -175,7 +178,9 @@ namespace HotelBase.Api.Controllers
                             roomRateTypeId = 28,
                             thirdOrderNo = order.HODistributorSerialId,
                             basePrice = order.HOContractPrice.ToString(),
-                            roomPrice = order.HOSellPrice.ToString()
+                            roomPrice = order.HOSellPrice.ToString(),
+                            productSerial = order.OutProductSerial,
+                            outCode = order.OutRoomCode
                         };
                     }
                 }
@@ -206,7 +211,7 @@ namespace HotelBase.Api.Controllers
         /// <param name="createrequset"></param>
         /// <param name="orderseridid"></param>
         /// <returns></returns>
-        public DataResult AtourOrder(CreateRequset createrequset,string orderseridid)
+        public DataResult AtourOrder(CreateRequset createrequset, string orderseridid)
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
@@ -273,12 +278,13 @@ namespace HotelBase.Api.Controllers
 
                     result.Code = DataResultType.Sucess;
                     result.Data = Encrypt.DESEncrypt(serialid);
-                    OrderBll.UpdatesSupplier(orderseridid, serialid);
+                    OrderBll.UpdatesSupplier(orderseridid, serialid, 0);
                 }
                 else
                 {
                     result.Code = DataResultType.Fail;
                     result.Message = data["msg"].ToString();
+                    OrderBll.UpdatesSupplier(orderseridid, "", 2);
                 }
             }
             return result;
@@ -298,15 +304,16 @@ namespace HotelBase.Api.Controllers
             var request = new XiWanOrderRequest();
             request.DistributeOrderNo = !string.IsNullOrWhiteSpace(item.thirdOrderNo) ? item.thirdOrderNo : orderseriald;
             request.HotelId = item.hotelId;
-            request.RoomId = item.roomTypeId.ToString();
+            request.RoomId = item.outCode.ToString();
             request.RoomName = GetXiWanRoomName(item.roomTypeId.ToString());
-            request.ProductSerial = 10;
+            request.ProductSerial = item.productSerial;
             request.ComeDate = Convert.ToDateTime(item.arrival).Date;
             request.RoomNum = item.roomNum;
             request.LeaveDate = Convert.ToDateTime(item.departure).Date;
             request.LastArriveTime = "18:00";
             request.TotalPrice = Convert.ToDecimal(item.basePrice);
             request.ContactName = item.contactName;
+            request.ContactMobile = item.mobile;
             request.GuestNames = item.guestName.Split(',');
             request.NoteToHotel = !string.IsNullOrWhiteSpace(item.remark) ? item.remark : "无";
             var rtn = XiWanAPI.XiWanPost<XiWanOrderResponse, XiWanOrderRequest>(request, HotelOrderUrl);
@@ -315,32 +322,19 @@ namespace HotelBase.Api.Controllers
             {
                 result.Code = DataResultType.Sucess;
                 result.Data = Encrypt.DESEncrypt(order.OrderNo);
-                OrderBll.UpdatesSupplier(orderseriald, order.OrderNo);
+                OrderBll.UpdatesSupplier(orderseriald, order.OrderNo, 0);
 
             }
             else
             {
                 result.Code = DataResultType.Fail;
                 result.Message = rtn?.Msg;
+                OrderBll.UpdatesSupplier(orderseriald, "", 2);
             }
             return result;
         }
 
-
-        public DataResult Test(int outid)
-        {
-            var result = new DataResult();
-            var request = new XiWanPriceRequest
-            {
-                HotelId = outid,
-                ComeDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                LeaveDate = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd"),
-            };
-            var rtn = XiWanAPI.XiWanPost<XiWanPriceHotel, XiWanPriceRequest>(request, HotelDPriceUrl);
-            var hotel = rtn?.Result;
-            return result;
-        }
-
+        #region Common
         /// <summary>
         /// 获取名称
         /// </summary>
@@ -365,48 +359,48 @@ namespace HotelBase.Api.Controllers
             return oldRoom.HRName;
         }
 
+        #endregion
+
         /// <summary>
         /// 操作订单
         /// </summary>
         /// <remarks>
         /// des加密，key单独提供
         /// </remarks>
+        /// <param name="searchtype">1:查询订单 2：取消订单</param>
         /// <param name="orderid">加密过的orderid</param>
+        /// <param name="type">1 亚朵 2 致和</param>
         /// <returns></returns>
-        public DataResult OperatAtourOrder(string orderid)
+        public DataResult OperatAtourOrder(int searchtype,string orderid, int type)
         {
             var result = new DataResult();
             try
             {
-                //解密
-                var escorderid = Encrypt.DESDecrypt(orderid);
-                Dictionary<string, string> dic = new Dictionary<string, string>();
-                dic.Add("atourOrderNo", escorderid);
-                dic.Add("appId", AtourAuth_APPID);
-                var sign = AtourSignUtil.GetSignUtil(dic);
-                var url = AtourAuth_URL + "baoku/order/cancelOrder";
-                var orderrequest = new
+                if (searchtype == 1)
                 {
-                    atourOrderNo = escorderid,
-                    appId = AtourAuth_APPID,
-                    sign = sign
-                };
-                var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
-                if (!string.IsNullOrWhiteSpace(orderresponse))
-                {
-                    var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
-                    if (data["msg"].ToString().ToLower() == "success")
+                    switch (type)
                     {
-                        var inresult = data["result"].ToString();
-
-                        result.Code = DataResultType.Sucess;
-                        result.Data = inresult;
-                    }
-                    else
-                    {
-                        result.Code = DataResultType.Fail;
+                        case 1:
+                            result = XiWanSearchOrder(orderid);
+                            break;
+                        case 2:
+                            result = XiWanSearchOrder(orderid);
+                            break;
                     }
                 }
+                else
+                {
+                    switch (type)
+                    {
+                        case 1:
+                            result = AtourCancelOrder(orderid);
+                            break;
+                        case 2:
+                            result = XiWanCancelOrder(orderid);
+                            break;
+                    }
+                }
+                return result;
 
             }
             catch (Exception ex)
@@ -415,5 +409,98 @@ namespace HotelBase.Api.Controllers
             }
             return result;
         }
+
+        #region  操作订单
+
+        /// <summary>
+        /// 亚朵操作订单
+        /// </summary>
+        /// <returns></returns>
+        public DataResult AtourCancelOrder(string orderid)
+        {
+            var result = new DataResult();
+            //解密
+            var escorderid = Encrypt.DESDecrypt(orderid);
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            dic.Add("atourOrderNo", escorderid);
+            dic.Add("appId", AtourAuth_APPID);
+            var sign = AtourSignUtil.GetSignUtil(dic);
+            var url = AtourAuth_URL + "baoku/order/cancelOrder";
+            var orderrequest = new
+            {
+                atourOrderNo = escorderid,
+                appId = AtourAuth_APPID,
+                sign = sign
+            };
+            var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
+            if (!string.IsNullOrWhiteSpace(orderresponse))
+            {
+                var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
+                if (data["msg"].ToString().ToLower() == "success")
+                {
+                    var inresult = data["result"].ToString();
+
+                    result.Code = DataResultType.Sucess;
+                    result.Data = inresult;
+                }
+                else
+                {
+                    result.Code = DataResultType.Fail;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 喜玩操作订单
+        /// </summary>
+        /// <returns></returns>
+        public DataResult XiWanCancelOrder(string orderid)
+        {
+            var result = new DataResult();
+            var orderquery = new XiWanOrderQueryRequest { OrderNo = orderid };
+            var rtn = XiWanAPI.XiWanPost<XiWanCancelOrderResponse, XiWanOrderQueryRequest>(orderquery, HotelCancelOrderUrl);
+            var order = rtn?.Result;
+            if (rtn.Code == "0")
+            {
+                result.Code = DataResultType.Sucess;
+                OrderBll.UpdatesSataus(orderid, 6);
+            }
+            else
+            {
+                result.Code = DataResultType.Fail;
+                result.Message = rtn?.Msg;
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region 查询订单
+        /// <summary>
+        /// 喜玩查询订单
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public DataResult XiWanSearchOrder(string orderid)
+        {
+            var result = new DataResult();
+            var orderquery = new XiWanOrderQueryRequest { OrderNo = orderid };
+            var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
+            var order = rtn?.Result;
+            if (order.Status >= 0)
+            {
+                result.Code = DataResultType.Sucess;
+                OrderBll.UpdatesSataus(orderid, order.Status);
+            }
+            else
+            {
+                result.Code = DataResultType.Fail;
+                result.Message = rtn?.Msg;
+            }
+            return result;
+        }
+
+        #endregion
     }
 }

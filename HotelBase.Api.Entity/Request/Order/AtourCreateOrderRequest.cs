@@ -207,6 +207,16 @@ namespace HotelBase.Api.Entity.Request.Order
         /// 总价
         /// </summary>
         public string roomPrice { get; set; }
+
+        /// <summary>
+        /// 喜玩产品类别
+        /// </summary>
+        public int productSerial { get; set; }
+
+        /// <summary>
+        /// 喜玩房型
+        /// </summary>
+        public string outCode { get; set; }
     }
 
     public class OrderRequest

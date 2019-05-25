@@ -42,6 +42,17 @@ namespace HotelBase.Api.Service
             return Ho_HotelOrderAccess.GetSeaModel(seridid);
         }
 
+
+        /// <summary>
+        /// 获取订单详情--供应商订单号
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public static SeaOrdrModel GetModelBySupplier(string supplierseridid)
+        {
+            return Ho_HotelOrderAccess.GetSeaModelBySupplier(supplierseridid);
+        }
+
         /// <summary>
         /// 预定资源查询
         /// </summary>
@@ -141,14 +152,25 @@ namespace HotelBase.Api.Service
         /// <param name="orderserialid"></param>
         /// <param name="supplierserialid"></param>
         /// <returns></returns>
-        public static int UpdatesSupplier(string orderserialid, string supplierserialid)
+        public static int UpdatesSupplier(string orderserialid, string supplierserialid,int status)
         {
-            var i = Ho_HotelOrderAccess.UpdatesSupplier(orderserialid, supplierserialid);
+            var i = Ho_HotelOrderAccess.UpdatesSupplier(orderserialid, supplierserialid,status);
 
             return i;
         }
 
-        
+        /// <summary>
+        /// 更新订单状态
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <param name="supplierserialid"></param>
+        /// <returns></returns>
+        public static int UpdatesSataus(string orderserialid, int status)
+        {
+            var i = Ho_HotelOrderAccess.UpdatesXiWanStatus(orderserialid, status);
+
+            return i;
+        }
 
         /// <summary>
         /// 获取订单日志

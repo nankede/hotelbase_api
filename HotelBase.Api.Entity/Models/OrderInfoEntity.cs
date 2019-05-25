@@ -147,6 +147,10 @@ namespace HotelBase.Api.Entity.Models
         public string OutHotelId { get; set; }
 
         public string OutRoomId { get; set; }
+
+        public int OutProductSerial { get; set; }
+
+        public string OutRoomCode { get; set; }
     }
 
     public class OrderLogSearchRequset : BaseRequest

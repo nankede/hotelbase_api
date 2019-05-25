@@ -145,15 +145,38 @@ namespace HotelBase.Api.DataAccess.Order
                 return null;
             }
             var para = new DynamicParameters();
-            var sql = @"SELECT hl.*,hi.HIOutId AS OutHotelId,hr.HROutId AS OutRoomId FROM ho_hotelorder hl  
+            var sql = @"SELECT hl.*,hi.HIOutId AS OutHotelId,hr.HROutId AS OutRoomId,hrr.HRROutCode AS OutRoomCode,hrr.HRRXwProductSerial AS OutProductSerial FROM ho_hotelorder hl  
                         inner join h_hotelinfo hi on hl.HIId = hi.Id
                         inner join h_hotelroom hr on hr.Id = hl.HRId
+                        inner join h_hotelroomrule hrr on hrr.Id=hl.HRRId
                         WHERE HOCustomerSerialId = @HOCustomerSerialId  LIMIT 1; ";
             para.Add("@HOCustomerSerialId", serialid);
             var data = MysqlHelper.GetModel<SeaOrdrModel>(sql, para);
             return data;
         }
 
+
+        /// <summary>
+        /// 订单详情--by供应商流水号
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public static SeaOrdrModel GetSeaModelBySupplier(string supplierserialid)
+        {
+            if (string.IsNullOrWhiteSpace(supplierserialid))
+            {
+                return null;
+            }
+            var para = new DynamicParameters();
+            var sql = @"SELECT hl.*,hi.HIOutId AS OutHotelId,hr.HROutId AS OutRoomId,hrr.HRROutCode AS OutRoomCode,hrr.HRRXwProductSerial AS OutProductSerial FROM ho_hotelorder hl  
+                        inner join h_hotelinfo hi on hl.HIId = hi.Id
+                        inner join h_hotelroom hr on hr.Id = hl.HRId
+                        inner join h_hotelroomrule hrr on hrr.Id=hl.HRRId
+                        WHERE HOSupplierSerialId = @HOSupplierSerialId  LIMIT 1; ";
+            para.Add("@HOSupplierSerialId", supplierserialid);
+            var data = MysqlHelper.GetModel<SeaOrdrModel>(sql, para);
+            return data;
+        }
 
 
         /// <summary>
@@ -426,11 +449,40 @@ namespace HotelBase.Api.DataAccess.Order
         /// </summary>
         /// <param name="orderserialid"></param>
         /// <returns></returns>
-        public static int UpdatesSupplier(string orderserialid, string supplierserialid)
+        public static int UpdatesSupplier(string orderserialid, string supplierserialid, int status = 0)
         {
             if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
             var sql = new StringBuilder();
-            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}'  WHERE HOCustomerSerialId='{1}'", supplierserialid, orderserialid);
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}',HODistributorSerialId='{1}'  WHERE HOCustomerSerialId='{1}'", supplierserialid, orderserialid, status);
+            var c = MysqlHelper.Update(sql.ToString());
+            return c;
+        }
+
+        /// <summary>
+        /// 更新状态--喜玩
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <returns></returns>
+        public static int UpdatesXiWanStatus(string orderserialid, int status)
+        {
+            if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
+            var qulangstatus = 0;
+            var sql = new StringBuilder();
+            switch (status)
+            {
+                case 1:
+                    qulangstatus = 0;
+                    break;
+                case 3:
+                case 4:
+                    qulangstatus = 1;
+                    break;
+                case 2:
+                case 6:
+                    qulangstatus = 3;
+                    break;
+            }
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOStatus='{0}'  WHERE HOCustomerSerialId='{1}'", qulangstatus, orderserialid);
             var c = MysqlHelper.Update(sql.ToString());
             return c;
         }

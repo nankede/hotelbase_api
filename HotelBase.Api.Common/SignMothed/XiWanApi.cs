@@ -160,4 +160,12 @@ namespace HotelBase.Api.Common.SignMothed
         public string NoteToHotel { get; set; }
 
     }
+
+    /// <summary>
+    /// 喜玩查询订单
+    /// </summary>
+    public class XiWanOrderQueryRequest
+    {
+        public string OrderNo { get; set; }
+    }
 }
