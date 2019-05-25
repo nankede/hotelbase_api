@@ -422,6 +422,20 @@ namespace HotelBase.Api.DataAccess.Order
         }
 
         /// <summary>
+        /// 更新供应商订单号和分销商订单号
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <returns></returns>
+        public static int UpdatesSupplier(string orderserialid, string supplierserialid)
+        {
+            if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
+            var sql = new StringBuilder();
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}'  WHERE HOCustomerSerialId='{1}'", supplierserialid, orderserialid);
+            var c = MysqlHelper.Update(sql.ToString());
+            return c;
+        }
+
+        /// <summary>
         /// 获取订单日志
         /// </summary>
         /// <param name="orderid"></param>

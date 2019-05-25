@@ -184,7 +184,7 @@ namespace HotelBase.Api.Controllers
                     switch (createrequset.supplierSourceId)
                     {
                         case 1:
-                            result = AtourOrder(createrequset);
+                            result = AtourOrder(createrequset, orderseridid);
                             break;
                         case 2:
                             result = XiWanOrder(createrequset, orderseridid);
@@ -204,8 +204,9 @@ namespace HotelBase.Api.Controllers
         /// 亚朵订单
         /// </summary>
         /// <param name="createrequset"></param>
+        /// <param name="orderseridid"></param>
         /// <returns></returns>
-        public DataResult AtourOrder(CreateRequset createrequset)
+        public DataResult AtourOrder(CreateRequset createrequset,string orderseridid)
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
@@ -272,6 +273,7 @@ namespace HotelBase.Api.Controllers
 
                     result.Code = DataResultType.Sucess;
                     result.Data = Encrypt.DESEncrypt(serialid);
+                    OrderBll.UpdatesSupplier(orderseridid, serialid);
                 }
                 else
                 {
@@ -287,13 +289,13 @@ namespace HotelBase.Api.Controllers
         /// 喜玩订单
         /// </summary>
         /// <param name="createrequset"></param>
+        /// <param name="orderseriald"></param>
         /// <returns></returns>
         public DataResult XiWanOrder(CreateRequset createrequset, string orderseriald)
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
             var request = new XiWanOrderRequest();
-            //{
             request.DistributeOrderNo = !string.IsNullOrWhiteSpace(item.thirdOrderNo) ? item.thirdOrderNo : orderseriald;
             request.HotelId = item.hotelId;
             request.RoomId = item.roomTypeId.ToString();
@@ -307,13 +309,14 @@ namespace HotelBase.Api.Controllers
             request.ContactName = item.contactName;
             request.GuestNames = item.guestName.Split(',');
             request.NoteToHotel = !string.IsNullOrWhiteSpace(item.remark) ? item.remark : "无";
-            //};
             var rtn = XiWanAPI.XiWanPost<XiWanOrderResponse, XiWanOrderRequest>(request, HotelOrderUrl);
             var order = rtn?.Result;
             if (!string.IsNullOrWhiteSpace(order.OrderNo))
             {
                 result.Code = DataResultType.Sucess;
                 result.Data = Encrypt.DESEncrypt(order.OrderNo);
+                OrderBll.UpdatesSupplier(orderseriald, order.OrderNo);
+
             }
             else
             {
