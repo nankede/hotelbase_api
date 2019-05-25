@@ -60,8 +60,8 @@ namespace HotelBase.Api.Service
                     {//存储酒店名称
                         HotelInsert(data.HotelList);
                     }
-                    result.Message = $"{i}";
-                    Thread.Sleep(100);
+                    result.Message += $"{i}:{sw.ElapsedMilliseconds.ToString()};";
+                    Thread.Sleep(10);
                 }
             }
             result.Message += $"||时间：" + sw.ElapsedMilliseconds.ToString();
@@ -170,7 +170,7 @@ namespace HotelBase.Api.Service
                 //房型等
                 var d1 = Xw_HotelPrice(x.Id);
                 result.Message += $"||{x.Id}:{d1.Message}";
-                Thread.Sleep(100);
+                Thread.Sleep(10);
 
             });
             return result;
@@ -272,6 +272,7 @@ namespace HotelBase.Api.Service
                                 {
                                     Id = 0,
                                     HRROutCode = r.RoomId,
+                                    HRRXwProductSerial = r.ProductSerial,
                                     HIId = x.Id,
                                     HRId = oldRoom.Id,
                                     HRRAddName = "喜玩新增",
@@ -292,6 +293,14 @@ namespace HotelBase.Api.Service
                                     HRRUpdateTime = new DateTime(2000, 1, 1),
                                 };
                                 oldRule.Id = (int)rrDb.Add(oldRule);
+                            }
+                            else
+                            {
+                                var sql = rrDb.Update().Where(rr => rr.Id == oldRule.Id);
+                                sql.Set(rr => rr.HRRXwProductSerial == r.ProductSerial
+                                && rr.HRRUpdateName == "喜玩更新"
+                                && rr.HRRUpdateTime == DateTime.Now
+                                ).Execute();
                             }
                             if (oldRule.Id > 0)
                             {
