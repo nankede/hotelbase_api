@@ -98,6 +98,7 @@ namespace HotelBase.Api.Service
                         var hotel = xwList.FirstOrDefault(xx => xx.HotelId == a);
                         var model = new H_HotelInfoModel()
                         {
+                            HIIsValid = 1,
                             HIOutId = hotel.HotelId,
                             HIOutType = 2,
                             HIName = hotel.HotelName,
@@ -126,7 +127,7 @@ namespace HotelBase.Api.Service
             var result = new DataResult();
 
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 2).Top(top).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.Id >= maxId && h.HIOutType == 2).Top(top).OrderBy(h => h.HIOutId)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
                 result.Message = "无数据";
@@ -320,7 +321,7 @@ namespace HotelBase.Api.Service
                                             HRPAddTime = DateTime.Now,
                                             HRPContractPrice = p.Price,
                                             HRPDate = p.Date,
-                                            HRPCount = p.AvailableNum,
+                                            HRPCount = p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum,
                                             HRPDateInt = dateInit,
                                             HRPIsValid = 1,
                                             HRPRetainCount = 0,
@@ -335,7 +336,7 @@ namespace HotelBase.Api.Service
                                     else
                                     {
                                         var sql = pDb.Update().Where(pr => pr.Id == price.Id);
-                                        sql.Set(pr => pr.HRPCount == p.AvailableNum);
+                                        sql.Set(pr => pr.HRPCount == (p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum));
                                         sql.Set(pr => pr.HRPContractPrice == p.Price
                                         && pr.HRPSellPrice == p.Price
                                         && pr.HRPUpdateName == "喜玩更新"
@@ -650,7 +651,7 @@ namespace HotelBase.Api.Service
 
     public class XiWanCancelOrderResponse
     {
-        
+
     }
 }
 
