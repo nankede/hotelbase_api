@@ -231,13 +231,14 @@ namespace HotelBase.Api.Service
                 if (hotel != null && hotel.HotelId > 0)
                 {
                     var c = hotel?.Rooms.Count() ?? 0;
+                    rtn.Message += $"{c}个；";
                     if (c == 0)
                     {//房型数量为0  酒店无效
                         hDb.Update().Where(h => h.Id == x.Id)
                         .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩无房型更新" && h.HIUpdateTime == DateTime.Now)
                         .Execute();
+                        rtn.Message += $"[无效]";
                     }
-                    rtn.Message += $"房型{  hotel?.Rooms.Count()}个；";
                     hotel?.Rooms.ForEach(r =>
                     {
                         var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
@@ -356,7 +357,7 @@ namespace HotelBase.Api.Service
                     });
                 }
             });
-            return new DataResult();
+            return rtn;
         }
 
         public static XiWanPriceHotel GetHotelPrice(int outId)
