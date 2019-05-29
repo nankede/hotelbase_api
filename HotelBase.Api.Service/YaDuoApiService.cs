@@ -160,7 +160,7 @@ namespace HotelBase.Api.Service
             var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
-
+                return result;
             }
 
             hotelList.ForEach(x =>
@@ -262,6 +262,10 @@ namespace HotelBase.Api.Service
                 }
                 else
                 {
+                    //房型数量为0  酒店无效
+                    hDb.Update().Where(h => h.Id == x.Id)
+                    .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "亚朵无房型更新" && h.HIUpdateTime == DateTime.Now)
+                    .Execute();
                     result.Message = rtn?.msg ?? "系统异常";
                 }
                 //查询最近三天的价格和库存

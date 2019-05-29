@@ -230,6 +230,13 @@ namespace HotelBase.Api.Service
                 var hotel = GetHotelPrice(x.HIOutId);
                 if (hotel != null && hotel.HotelId > 0)
                 {
+                    var c = hotel?.Rooms.Count() ?? 0;
+                    if (c == 0)
+                    {//房型数量为0  酒店无效
+                        hDb.Update().Where(h => h.Id == x.Id)
+                        .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩无房型更新" && h.HIUpdateTime == DateTime.Now)
+                        .Execute();
+                    }
                     rtn.Message += $"房型{  hotel?.Rooms.Count()}个；";
                     hotel?.Rooms.ForEach(r =>
                     {
