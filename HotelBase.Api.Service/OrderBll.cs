@@ -23,7 +23,7 @@ namespace HotelBase.Api.Service
         }
         
         /// <summary>
-        /// 获取订单详情
+        /// 获取订单详情--根据订单主键id
         /// </summary>
         /// <param name="orderid"></param>
         /// <returns></returns>
@@ -33,7 +33,7 @@ namespace HotelBase.Api.Service
         }
 
         /// <summary>
-        /// 获取订单详情
+        /// 获取订单详情--根据订单流水号
         /// </summary>
         /// <param name="orderid"></param>
         /// <returns></returns>
@@ -160,7 +160,7 @@ namespace HotelBase.Api.Service
         }
 
         /// <summary>
-        /// 更新订单状态
+        /// 更新订单状态--喜玩
         /// </summary>
         /// <param name="orderserialid"></param>
         /// <param name="supplierserialid"></param>
@@ -168,6 +168,19 @@ namespace HotelBase.Api.Service
         public static int UpdatesSataus(string orderserialid, int status)
         {
             var i = Ho_HotelOrderAccess.UpdatesXiWanStatus(orderserialid, status);
+
+            return i;
+        }
+
+        /// <summary>
+        /// 更新订单状态--亚朵
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <param name="supplierserialid"></param>
+        /// <returns></returns>
+        public static int UpdateAutorSataus(string orderserialid, string status)
+        {
+            var i = Ho_HotelOrderAccess.UpdatesAutorStatus(orderserialid, status);
 
             return i;
         }

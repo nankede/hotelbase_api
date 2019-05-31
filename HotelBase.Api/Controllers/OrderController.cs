@@ -29,9 +29,10 @@ namespace HotelBase.Api.Controllers
     /// </summary>
     public class OrderController : ApiController
     {
-        private string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApiTest"];
-        private string AtourAuth_APPID = ConfigurationManager.AppSettings["appidtest"];
-        private string AtourAuth_MebId = ConfigurationManager.AppSettings["mebidtest"];
+        private string AtourAuth_URL = ConfigurationManager.AppSettings["OpenApi"];
+        private string AtourAuth_APPID = ConfigurationManager.AppSettings["appid"];
+        private string AtourAuth_MebId = ConfigurationManager.AppSettings["mebid"];
+        private string AtourAuth_APPKEY = ConfigurationManager.AppSettings["key"];
 
         private static string HotelOrderUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/order/SubmitOrder.ashx";
         private static string HotelDPriceUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotel.ashx";
@@ -371,7 +372,7 @@ namespace HotelBase.Api.Controllers
         /// <param name="orderid">加密过的orderid</param>
         /// <param name="type">1 亚朵 2 致和</param>
         /// <returns></returns>
-        public DataResult OperatAtourOrder(int searchtype,string orderid, int type)
+        public DataResult OperatAtourOrder(int searchtype, string orderid, int type)
         {
             var result = new DataResult();
             try
@@ -381,7 +382,7 @@ namespace HotelBase.Api.Controllers
                     switch (type)
                     {
                         case 1:
-                            result = XiWanSearchOrder(orderid);
+                            result = AtourSearchOrder(orderid);
                             break;
                         case 2:
                             result = XiWanSearchOrder(orderid);
@@ -438,10 +439,8 @@ namespace HotelBase.Api.Controllers
                 var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
                 if (data["msg"].ToString().ToLower() == "success")
                 {
-                    var inresult = data["result"].ToString();
-
                     result.Code = DataResultType.Sucess;
-                    result.Data = inresult;
+                    OrderBll.UpdatesSataus(orderid, 6);
                 }
                 else
                 {
@@ -477,6 +476,50 @@ namespace HotelBase.Api.Controllers
         #endregion
 
         #region 查询订单
+
+        /// <summary>
+        /// 亚朵查询订单
+        /// </summary>
+        /// <returns></returns>
+        public DataResult AtourSearchOrder(string orderid)
+        {
+            var result = new DataResult();
+            var ordermodel = OrderBll.GetModel(orderid);
+            if (ordermodel.Id > 0)
+            {
+                Dictionary<string, string> dic = new Dictionary<string, string>();
+                dic.Add("orderNo", orderid);
+                dic.Add("atourOrderNo", ordermodel.HOSupplierSerialId);
+                dic.Add("appId", AtourAuth_APPID);
+                var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourAuth_URL + "baoku/order/queryOrder";
+                var orderrequest = new
+                {
+                    orderNo = orderid,
+                    atourOrderNo = ordermodel.HOSupplierSerialId,
+                    appId = AtourAuth_APPID,
+                    sign = sign
+                };
+                var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
+                if (!string.IsNullOrWhiteSpace(orderresponse))
+                {
+                    var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
+                    if (data["msg"].ToString().ToLower() == "success")
+                    {
+                        result.Code = DataResultType.Sucess;
+                        OrderBll.UpdateAutorSataus(orderid,data["result"]["status"].ToString());
+                    }
+                    else
+                    {
+                        result.Code = DataResultType.Fail;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+
         /// <summary>
         /// 喜玩查询订单
         /// </summary>
@@ -485,18 +528,35 @@ namespace HotelBase.Api.Controllers
         public DataResult XiWanSearchOrder(string orderid)
         {
             var result = new DataResult();
-            var orderquery = new XiWanOrderQueryRequest { OrderNo = orderid };
-            var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
-            var order = rtn?.Result;
-            if (order.Status >= 0)
+            var ordermodel = OrderBll.GetModel(orderid);
+            if (ordermodel.Id > 0)
             {
-                result.Code = DataResultType.Sucess;
-                OrderBll.UpdatesSataus(orderid, order.Status);
+                var orderquery = new XiWanOrderQueryRequest { OrderNo = ordermodel.HOSupplierSerialId };
+                var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
+                if (rtn.Code == "0")
+                {
+                    var order = rtn?.Result;
+                    if (order.Status >= 0)
+                    {
+                        result.Code = DataResultType.Sucess;
+                        OrderBll.UpdatesSataus(orderid, order.Status);
+                    }
+                    else
+                    {
+                        result.Code = DataResultType.Fail;
+                        result.Message = rtn?.Msg;
+                    }
+                }
+                else
+                {
+                    result.Code = DataResultType.Fail;
+                    result.Message = rtn?.Msg;
+                }
             }
             else
             {
                 result.Code = DataResultType.Fail;
-                result.Message = rtn?.Msg;
+                result.Message = "未查询到相关订单";
             }
             return result;
         }

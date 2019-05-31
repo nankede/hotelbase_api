@@ -12,11 +12,17 @@ namespace HotelBase.Api.Common.SignMothed
     /// </summary>
     public static class XiWanConst
     {
-        public static string XiWan_Url = "124.172.245.107";// 测试  124.172.245.107
+        //public static string XiWan_Url = "124.172.245.107";// 测试  124.172.245.107
 
-        public static string XiWan_SecurityKey = "iaoPZolcKuhgJQYhdPglmbjYUahgsuNb";
+        //public static string XiWan_SecurityKey = "iaoPZolcKuhgJQYhdPglmbjYUahgsuNb";
 
-        public static string XiWan_Account = "apitestqulang";
+        //public static string XiWan_Account = "apitestqulang";
+
+        public static string XiWan_Url = "hotelapi.hotelhotel.cn/";// 测试  124.172.245.107
+
+        public static string XiWan_SecurityKey = "pADIikmhuJhbvaTCVaGdqdlLKADQerti";
+
+        public static string XiWan_Account = "qulangapi";
     }
     /// <summary>
     /// 喜玩接口

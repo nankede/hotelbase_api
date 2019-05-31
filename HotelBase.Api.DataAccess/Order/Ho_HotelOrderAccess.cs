@@ -463,6 +463,35 @@ namespace HotelBase.Api.DataAccess.Order
         /// </summary>
         /// <param name="orderserialid"></param>
         /// <returns></returns>
+        public static int UpdatesAutorStatus(string orderserialid, string status)
+        {
+            if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
+            var qulangstatus = 0;
+            var sql = new StringBuilder();
+            switch (status)
+            {
+                case "1":
+                    qulangstatus = 0;
+                    break;
+                case "4":
+                case "5":
+                    qulangstatus = 1;
+                    break;
+                case "2":
+                case "3":
+                    qulangstatus = 3;
+                    break;
+            }
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOStatus='{0}'  WHERE HOCustomerSerialId='{1}'", qulangstatus, orderserialid);
+            var c = MysqlHelper.Update(sql.ToString());
+            return c;
+        }
+
+        /// <summary>
+        /// 更新状态--喜玩
+        /// </summary>
+        /// <param name="orderserialid"></param>
+        /// <returns></returns>
         public static int UpdatesXiWanStatus(string orderserialid, int status)
         {
             if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
