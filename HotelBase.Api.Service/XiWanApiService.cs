@@ -104,12 +104,14 @@ namespace HotelBase.Api.Service
                             HIName = hotel.HotelName,
                             HIAddName = "喜玩新增",
                         };
-                        addList.Add(model);
+                        var id = (int)hDb.Add(model);
+                        //增量同步
+                        OpenApi.AddHotelInfo(id);
                     });
-                    if (addList != null && addList.Count > 0)
-                    {
-                        hDb.AddBatch(addList);
-                    }
+                    //if (addList != null && addList.Count > 0)
+                    //{
+                    //    hDb.AddBatch(addList);
+                    //}
                     xwList = new List<XiWanHotelInfo>();
                 }
             });
@@ -239,122 +241,132 @@ namespace HotelBase.Api.Service
                         .Execute();
                         rtn.Message += $"[无效]";
                     }
-                    hotel?.Rooms.ForEach(r =>
+                    else
                     {
-                        var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
-                        if (oldRoom == null || oldRoom.Id <= 0)
-                        {
-                            oldRoom = new H_HotelRoomModel
-                            {
-                                HROutId = r.RoomTypeId.ToInt(),
-                                HIId = x.Id,
-                                Id = 0,
-                                HRAddName = "喜玩新增",
-                                HRAddTime = DateTime.Now,
-                                HRBedSize = 0,
-                                HRBedType = r.BedType,//需要转化
-                                HRFloor = string.Empty,
-                                HRIsValid = 1,
-                                HRName = r.RoomName ?? String.Empty,
-                                HROutType = 2,
-                                HRPersonCount = 0,
-                                HRRoomSIze = r.Description ?? string.Empty,
-                                HRUpdateName = string.Empty,
-                                HRUpdateTime = new DateTime(2000, 1, 1),
-                                HRWindowsType = 0//需要转化
-                            };
-                            oldRoom.Id = (int)roomDb.Add(oldRoom);
-                        }
-                        else
-                        {//修改暂时不弄
 
-                        }
-
-                        if (oldRoom.Id > 0)
+                        hotel?.Rooms.ForEach(r =>
                         {
-                            var rrDb = new H_HotelRoomRuleAccess();
-                            //价格策略
-                            var oldRule = rrDb.Query().Where(rr => rr.HRId == oldRoom.Id && rr.HRROutCode == r.RoomId && rr.HRROutType == 2).FirstOrDefault();
-                            if (oldRule == null || oldRule.Id <= 0)
+                            var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
+                            if (oldRoom == null || oldRoom.Id <= 0)
                             {
-                                oldRule = new H_HotelRoomRuleModel
+                                oldRoom = new H_HotelRoomModel
                                 {
-                                    Id = 0,
-                                    HRROutCode = r.RoomId,
-                                    HRRXwProductSerial = r.ProductSerial,
+                                    HROutId = r.RoomTypeId.ToInt(),
                                     HIId = x.Id,
-                                    HRId = oldRoom.Id,
-                                    HRRAddName = "喜玩新增",
-                                    HRRAddTime = DateTime.Now,
-                                    HRRBreakfastRule = 0,
-                                    HRRBreakfastRuleName = string.Empty,
-                                    HRRCancelRule = 0,
-                                    HRRCancelRuleName = string.Empty,
-                                    HRRIsValid = 1,
-                                    HRRName = r.RoomName ?? String.Empty,
-                                    HRROutId = 0,
-                                    HRROutType = 2,
-                                    HRRSourceId = 10103,
-                                    HRRSourceName = "代理",
-                                    HRRSupplierId = 2,
-                                    HRRSupplierName = "喜玩",
-                                    HRRUpdateName = string.Empty,
-                                    HRRUpdateTime = new DateTime(2000, 1, 1),
+                                    Id = 0,
+                                    HRAddName = "喜玩新增",
+                                    HRAddTime = DateTime.Now,
+                                    HRBedSize = 0,
+                                    HRBedType = r.BedType,//需要转化
+                                    HRFloor = string.Empty,
+                                    HRIsValid = 1,
+                                    HRName = r.RoomName ?? String.Empty,
+                                    HROutType = 2,
+                                    HRPersonCount = 0,
+                                    HRRoomSIze = r.Description ?? string.Empty,
+                                    HRUpdateName = string.Empty,
+                                    HRUpdateTime = new DateTime(2000, 1, 1),
+                                    HRWindowsType = 0//需要转化
                                 };
-                                oldRule.Id = (int)rrDb.Add(oldRule);
+                                oldRoom.Id = (int)roomDb.Add(oldRoom);
+
                             }
                             else
-                            {
-                                var sql = rrDb.Update().Where(rr => rr.Id == oldRule.Id);
-                                sql.Set(rr => rr.HRRXwProductSerial == r.ProductSerial
-                                && rr.HRRUpdateName == "喜玩更新"
-                                && rr.HRRUpdateTime == DateTime.Now
-                                ).Execute();
+                            {//修改暂时不弄
+
                             }
-                            if (oldRule.Id > 0)
+
+                            if (oldRoom.Id > 0)
                             {
-                                var pDb = new H_HoteRulePriceAccess();
-                                r.Rates?.ForEach(p =>
+                                var rrDb = new H_HotelRoomRuleAccess();
+                                //价格策略
+                                var oldRule = rrDb.Query().Where(rr => rr.HRId == oldRoom.Id && rr.HRROutCode == r.RoomId && rr.HRROutType == 2).FirstOrDefault();
+                                if (oldRule == null || oldRule.Id <= 0)
                                 {
-                                    var dateInit = ConvertHelper.ToInt32(p.Date.ToString("yyyyMMdd"), 0);
-                                    var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
-                                    if (price == null || price.Id <= 0)
-                                    {//新增价格和库存
-                                        price = new H_HoteRulePriceModel
-                                        {
-                                            Id = 0,
-                                            HIId = x.Id,
-                                            HRId = oldRoom.Id,
-                                            HRPAddName = "喜玩新增",
-                                            HRPAddTime = DateTime.Now,
-                                            HRPContractPrice = p.Price,
-                                            HRPDate = p.Date,
-                                            HRPCount = p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum,
-                                            HRPDateInt = dateInit,
-                                            HRPIsValid = 1,
-                                            HRPRetainCount = 0,
-                                            HRPSellPrice = p.Price,
-                                            HRPStatus = 1,
-                                            HRPUpdateName = string.Empty,
-                                            HRPUpdateTime = new DateTime(2000, 1, 1),
-                                            HRRId = oldRule.Id
-                                        };
-                                        price.Id = (int)pDb.Add(price);
-                                    }
-                                    else
+                                    oldRule = new H_HotelRoomRuleModel
                                     {
-                                        var sql = pDb.Update().Where(pr => pr.Id == price.Id);
-                                        sql.Set(pr => pr.HRPCount == (p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum));
-                                        sql.Set(pr => pr.HRPContractPrice == p.Price
-                                        && pr.HRPSellPrice == p.Price
-                                        && pr.HRPUpdateName == "喜玩更新"
-                                        && pr.HRPUpdateTime == DateTime.Now
-                                        ).Execute();
-                                    }
-                                });
+                                        Id = 0,
+                                        HRROutCode = r.RoomId,
+                                        HRRXwProductSerial = r.ProductSerial,
+                                        HIId = x.Id,
+                                        HRId = oldRoom.Id,
+                                        HRRAddName = "喜玩新增",
+                                        HRRAddTime = DateTime.Now,
+                                        HRRBreakfastRule = 0,
+                                        HRRBreakfastRuleName = string.Empty,
+                                        HRRCancelRule = 0,
+                                        HRRCancelRuleName = string.Empty,
+                                        HRRIsValid = 1,
+                                        HRRName = r.RoomName ?? String.Empty,
+                                        HRROutId = 0,
+                                        HRROutType = 2,
+                                        HRRSourceId = 10103,
+                                        HRRSourceName = "代理",
+                                        HRRSupplierId = 2,
+                                        HRRSupplierName = "喜玩",
+                                        HRRUpdateName = string.Empty,
+                                        HRRUpdateTime = new DateTime(2000, 1, 1),
+                                    };
+                                    oldRule.Id = (int)rrDb.Add(oldRule);
+                                }
+                                else
+                                {
+                                    var sql = rrDb.Update().Where(rr => rr.Id == oldRule.Id);
+                                    sql.Set(rr => rr.HRRXwProductSerial == r.ProductSerial
+                                    && rr.HRRUpdateName == "喜玩更新"
+                                    && rr.HRRUpdateTime == DateTime.Now
+                                    ).Execute();
+                                }
+                                if (oldRule.Id > 0)
+                                {
+                                    var pDb = new H_HoteRulePriceAccess();
+                                    r.Rates?.ForEach(p =>
+                                    {
+                                        var dateInit = ConvertHelper.ToInt32(p.Date.ToString("yyyyMMdd"), 0);
+                                        var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
+                                        if (price == null || price.Id <= 0)
+                                        {//新增价格和库存
+                                            price = new H_HoteRulePriceModel
+                                            {
+                                                Id = 0,
+                                                HIId = x.Id,
+                                                HRId = oldRoom.Id,
+                                                HRPAddName = "喜玩新增",
+                                                HRPAddTime = DateTime.Now,
+                                                HRPContractPrice = p.Price,
+                                                HRPDate = p.Date,
+                                                HRPCount = p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum,
+                                                HRPDateInt = dateInit,
+                                                HRPIsValid = 1,
+                                                HRPRetainCount = 0,
+                                                HRPSellPrice = p.Price,
+                                                HRPStatus = 1,
+                                                HRPUpdateName = string.Empty,
+                                                HRPUpdateTime = new DateTime(2000, 1, 1),
+                                                HRRId = oldRule.Id
+                                            };
+                                            price.Id = (int)pDb.Add(price);
+                                        }
+                                        else
+                                        {
+                                            var sql = pDb.Update().Where(pr => pr.Id == price.Id);
+                                            sql.Set(pr => pr.HRPCount == (p.AvailableNum == 0 && p.Status ? 5 : p.AvailableNum));
+                                            sql.Set(pr => pr.HRPContractPrice == p.Price
+                                            && pr.HRPIsValid == (p.Status ? 1 : 0)
+                                            && pr.HRPSellPrice == p.Price
+                                            && pr.HRPUpdateName == "喜玩更新"
+                                            && pr.HRPUpdateTime == DateTime.Now
+                                            ).Execute();
+                                        }
+                                        OpenApi.AddRuleInfo(x.Id, oldRoom.Id, p.BreakfastNum, price.Id, p.Status ? 1 : 0);
+
+                                    });
+                                }
                             }
-                        }
-                    });
+                        });
+                        //同步房型
+                        OpenApi.AddRoomInfo(x.Id);
+                    }
                 }
             });
             return rtn;

@@ -92,6 +92,7 @@ namespace HotelBase.Api.Service
                                  HIGdLonLat = $"{x.longitude},{x.latitude}"
                              };
                              id = (int)(hDb.Add(model));
+                             OpenApi.AddHotelInfo(id);
                          }
                          else
                          {//更新
@@ -237,7 +238,7 @@ namespace HotelBase.Api.Service
                         var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HROutType == 1)?.FirstOrDefault();
                         if (baseRoom == null || baseRoom.Id <= 0)
                         {
-                            db.Add(new H_HotelRoomModel
+                            var roomId = db.Add(new H_HotelRoomModel
                             {
                                 Id = 0,
                                 HIId = x.Id,
@@ -259,6 +260,7 @@ namespace HotelBase.Api.Service
                         }
                         //是否要修改
                     });
+                    OpenApi.AddRoomInfo(x.Id);
                 }
                 else
                 {
@@ -430,6 +432,9 @@ namespace HotelBase.Api.Service
                                 && pr.HRPUpdateTime == DateTime.Now
                                 ).Execute();
                             }
+
+                            OpenApi.AddRuleInfo(hotel.Id, x.Id, 0, price.Id, 1);
+
                         }
                     });
                 }
