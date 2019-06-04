@@ -69,6 +69,7 @@ namespace HotelBase.Api.Controllers
                     if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)//1 亚朵 2喜玩
                     {
                         issned = true;
+                        //createrequset.orderModel.outCode = createrequset.supplierSourceId.ToString();
                     }
                     var hotelinfo = OrderBll.GetSupplierHotelList(item.roomTypeId);
                     if (hotelinfo != null)
@@ -127,7 +128,7 @@ namespace HotelBase.Api.Controllers
                         #endregion
                     }
                 }
-                else if (!string.IsNullOrWhiteSpace(orderseridid))
+                if (!string.IsNullOrWhiteSpace(orderseridid))
                 {
                     var order = OrderBll.GetModel(orderseridid);
                     if (order.Id > 0)
