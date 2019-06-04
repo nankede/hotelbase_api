@@ -55,78 +55,76 @@ namespace HotelBase.Api.Controllers
                 using (StreamReader sr = new StreamReader(HttpContext.Current.Request.GetBufferedInputStream()))
                 {
                     sr.ReadToEnd();
+
+                }
+                using (StreamReader sr = new StreamReader(HttpContext.Current.Request.InputStream))
+                {
                     jsonvalue = sr.ReadToEnd();
                     createrequset = JsonConvert.DeserializeObject<CreateRequset>(jsonvalue);
                 }
                 if (createrequset != null)
                 {
-                    using (StreamReader sr = new StreamReader(HttpContext.Current.Request.InputStream))
+                    var item = createrequset.orderModel;
+                    //需要推送的订单
+                    if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)//1 亚朵 2喜玩
                     {
-                        jsonvalue = sr.ReadToEnd();
-                        JavaScriptSerializer js = new JavaScriptSerializer() { MaxJsonLength = Int32.MaxValue };
-                        createrequset = js.Deserialize<CreateRequset>(jsonvalue);
-                        var item = createrequset.orderModel;
-                        //需要推送的订单
-                        if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)//1 亚朵 2喜玩
+                        issned = true;
+                    }
+                    var hotelinfo = OrderBll.GetSupplierHotelList(item.roomTypeId);
+                    if (hotelinfo != null)
+                    {
+                        #region 
+                        var newmodel = new HO_HotelOrderModel
                         {
-                            issned = true;
-                        }
-                        var hotelinfo = OrderBll.GetSupplierHotelList(item.roomTypeId);
-                        if (hotelinfo != null)
+                            HOCustomerSerialId = ExtOrderNum.Gener("Z", 1),
+                            HIId = hotelinfo.HotelId,
+                            HName = hotelinfo.HotelName,
+                            HRId = hotelinfo.HotelRoomId,
+                            HRName = hotelinfo.HotelRoomName,
+                            HRRId = hotelinfo.HotelRoomRuleId,
+                            HRRName = hotelinfo.HotelRoomRuleName,
+                            HOSupplierId = hotelinfo.HotelSupplierId,
+                            HOSupperlierName = hotelinfo.HotelSupplierName,
+                            HODistributorId = createrequset.distributorSourceId,
+                            HODistributorName = createrequset.distributorSource,
+                            HOSupplierSourceId = hotelinfo.HotelSupplierSourceId,
+                            HOSupplierSourceName = hotelinfo.HotelSupplierSourceName,
+                            HODistributorSerialId = item.thirdOrderNo,
+                            HORoomCount = item.roomNum,
+                            HONight = item.roomNum,
+                            HOLinkerName = item.contactName,
+                            HOCustomerName = item.guestName,
+                            HOContractPrice = Convert.ToDecimal(item.basePrice),
+                            HOSellPrice = Convert.ToDecimal(item.roomPrice),
+                            HOCheckInDate = Convert.ToDateTime(item.arrival),
+                            HOCheckOutDate = Convert.ToDateTime(item.departure),
+                            HOLastCheckInTime = item.assureTime,
+                            HOAddId = 0,
+                            HOAddName = "system",
+                            HOAddDepartId = 0,
+                            HOAddDepartName = "system",
+                            HOAddTime = DateTime.Now,
+                            HORemark = item.remark,
+                            HOUpdateId = 0,
+                            HOUpdateName = "系统",
+                            HOUpdateTime = DateTime.MinValue
+                        };
+                        //日志
+                        var logmodel = new HO_HotelOrderLogModel
                         {
-                            #region 
-                            var newmodel = new HO_HotelOrderModel
-                            {
-                                HOCustomerSerialId = ExtOrderNum.Gener("Z", 1),
-                                HIId = hotelinfo.HotelId,
-                                HName = hotelinfo.HotelName,
-                                HRId = hotelinfo.HotelRoomId,
-                                HRName = hotelinfo.HotelRoomName,
-                                HRRId = hotelinfo.HotelRoomRuleId,
-                                HRRName = hotelinfo.HotelRoomRuleName,
-                                HOSupplierId = hotelinfo.HotelSupplierId,
-                                HOSupperlierName = hotelinfo.HotelSupplierName,
-                                HODistributorId = createrequset.distributorSourceId,
-                                HODistributorName = createrequset.distributorSource,
-                                HOSupplierSourceId = hotelinfo.HotelSupplierSourceId,
-                                HOSupplierSourceName = hotelinfo.HotelSupplierSourceName,
-                                HODistributorSerialId = item.thirdOrderNo,
-                                HORoomCount = item.roomNum,
-                                HONight = item.roomNum,
-                                HOLinkerName = item.contactName,
-                                HOCustomerName = item.guestName,
-                                HOContractPrice = Convert.ToDecimal(item.basePrice),
-                                HOSellPrice = Convert.ToDecimal(item.roomPrice),
-                                HOCheckInDate = Convert.ToDateTime(item.arrival),
-                                HOCheckOutDate = Convert.ToDateTime(item.departure),
-                                HOLastCheckInTime = item.assureTime,
-                                HOAddId = 0,
-                                HOAddName = "system",
-                                HOAddDepartId = 0,
-                                HOAddDepartName = "system",
-                                HOAddTime = DateTime.Now,
-                                HORemark = item.remark,
-                                HOUpdateId = 0,
-                                HOUpdateName = "系统",
-                                HOUpdateTime = DateTime.MinValue
-                            };
-                            //日志
-                            var logmodel = new HO_HotelOrderLogModel
-                            {
-                                HOLOrderId = newmodel.HOCustomerSerialId,
-                                HOLLogType = 1,//订单日志
-                                HOLRemark = "创建订单：" + newmodel.HOCustomerSerialId,
-                                HOLAddId = 0,
-                                HOLAddName = "系统",
-                                HOLAddDepartId = 0,
-                                HOLAddDepartName = "系统",
-                                HOLAddTime = DateTime.Now
-                            };
-                            OrderLogBll.AddOrderModel(logmodel);
-                            var response = OrderBll.AddOrderModel(newmodel);
-                            orderseridid = newmodel.HOCustomerSerialId;
-                            #endregion
-                        }
+                            HOLOrderId = newmodel.HOCustomerSerialId,
+                            HOLLogType = 1,//订单日志
+                            HOLRemark = "创建订单：" + newmodel.HOCustomerSerialId,
+                            HOLAddId = 0,
+                            HOLAddName = "系统",
+                            HOLAddDepartId = 0,
+                            HOLAddDepartName = "系统",
+                            HOLAddTime = DateTime.Now
+                        };
+                        OrderLogBll.AddOrderModel(logmodel);
+                        var response = OrderBll.AddOrderModel(newmodel);
+                        orderseridid = newmodel.HOCustomerSerialId;
+                        #endregion
                     }
                 }
                 else if (!string.IsNullOrWhiteSpace(orderseridid))
