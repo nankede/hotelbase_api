@@ -52,17 +52,14 @@ namespace HotelBase.Api.Controllers
             bool issned = false;
             try
             {
-                if (string.IsNullOrWhiteSpace(jsonvalue) && string.IsNullOrWhiteSpace(orderseridid))
+                using (StreamReader sr = new StreamReader(HttpContext.Current.Request.GetBufferedInputStream()))
                 {
-                    return result;
+                    sr.ReadToEnd();
+                    jsonvalue = sr.ReadToEnd();
+                    createrequset = JsonConvert.DeserializeObject<CreateRequset>(jsonvalue);
                 }
-                else if (!string.IsNullOrWhiteSpace(jsonvalue))
+                if (createrequset != null)
                 {
-                    using (StreamReader sr = new StreamReader(HttpContext.Current.Request.GetBufferedInputStream()))
-                    {
-                        sr.ReadToEnd();
-                    }
-
                     using (StreamReader sr = new StreamReader(HttpContext.Current.Request.InputStream))
                     {
                         jsonvalue = sr.ReadToEnd();
@@ -201,7 +198,7 @@ namespace HotelBase.Api.Controllers
             }
             catch (Exception ex)
             {
-
+                LogHelper.Error("异常" + ex.ToString());
             }
             return result;
         }
@@ -507,7 +504,7 @@ namespace HotelBase.Api.Controllers
                     if (data["msg"].ToString().ToLower() == "success")
                     {
                         result.Code = DataResultType.Sucess;
-                        OrderBll.UpdateAutorSataus(orderid,data["result"]["status"].ToString());
+                        OrderBll.UpdateAutorSataus(orderid, data["result"]["status"].ToString());
                     }
                     else
                     {
