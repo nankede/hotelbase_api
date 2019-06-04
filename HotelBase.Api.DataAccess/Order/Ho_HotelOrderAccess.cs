@@ -369,8 +369,8 @@ namespace HotelBase.Api.DataAccess.Order
         public static int AddOrderModel(HO_HotelOrderModel model)
         {
             var sql = new StringBuilder();
-            sql.Append(" INSERT INTO `ho_hotelorder` (`HOCustomerSerialId`, `HIId`, `HName`, `HRId`, `HRName`, `HRRId`, `HRRName`, `HOSupplierId`, `HOSupperlierName`, `HOSupplierSourceId`, `HOSupplierSourceName`, `HOOutSerialId`, `HOSupplierSerialId`, `HOStatus`, `HOPayStatus`, `HORoomCount`, `HOChild`, `HOAdult`, `HoPlat1`, `HoPlat2`, `HOContractPrice`, `HOSellPrice`, `HOCustomerName`, `HOCustomerMobile`, `HOLinkerName`, `HOLinkerMobile`, `HORemark`, `HOCheckInDate`, `HOCheckOutDate`, `HOLastCheckInTime`, `HOAddId`, `HOAddName`, `HOAddDepartId`, `HOAddDepartName`, `HOAddTime`, `HOUpdateId`, `HOUpdateName`, `HOUpdateTime`) VALUES ");
-            sql.Append("( @HOCustomerSerialId, @HIId, @HName, @HRId, @HRName, @HRRId, @HRRName, @HOSupplierId, @HOSupperlierName, @HOSupplierSourceId, @HOSupplierSourceName, @HOOutSerialId, @HOSupplierSerialId, @HOStatus, @HOPayStatus, @HORoomCount, @HOChild, @HOAdult, @HoPlat1, @HoPlat2, @HOContractPrice, @HOSellPrice, @HOCustomerName, @HOCustomerMobile, @HOLinkerName, @HOLinkerMobile, @HORemark, @HOCheckInDate, @HOCheckOutDate, @HOLastCheckInTime, @HOAddId, @HOAddName, @HOAddDepartId, @HOAddDepartName, @HOAddTime, @HOUpdateId, @HOUpdateName, @HOUpdateTime)");
+            sql.Append(" INSERT INTO `ho_hotelorder` (`HOCustomerSerialId`, `HIId`, `HName`, `HRId`, `HRName`, `HRRId`, `HRRName`, `HOSupplierId`, `HOSupperlierName`,`HODistributorId`, `HODistributorName`, `HOSupplierSourceId`, `HOSupplierSourceName`, `HOOutSerialId`,`HODistributorSerialId`,`HOSupplierCorfirmSerialId`,`HONight`,`HOSupplierSerialId`, `HOStatus`, `HOPayStatus`, `HORoomCount`, `HOChild`, `HOAdult`, `HoPlat1`, `HoPlat2`, `HOContractPrice`, `HOSellPrice`, `HOCustomerName`, `HOCustomerMobile`, `HOLinkerName`, `HOLinkerMobile`, `HORemark`, `HOCheckInDate`, `HOCheckOutDate`, `HOLastCheckInTime`, `HOAddId`, `HOAddName`, `HOAddDepartId`, `HOAddDepartName`, `HOAddTime`, `HOUpdateId`, `HOUpdateName`, `HOUpdateTime`) VALUES ");
+            sql.Append("( @HOCustomerSerialId, @HIId, @HName, @HRId, @HRName, @HRRId, @HRRName, @HOSupplierId, @HOSupperlierName,@HODistributorId, @HODistributorName, @HOSupplierSourceId, @HOSupplierSourceName, @HOOutSerialId, @HODistributorSerialId, @HOSupplierCorfirmSerialId, @HONight, @HOSupplierSerialId, @HOStatus, @HOPayStatus, @HORoomCount, @HOChild, @HOAdult, @HoPlat1, @HoPlat2, @HOContractPrice, @HOSellPrice, @HOCustomerName, @HOCustomerMobile, @HOLinkerName, @HOLinkerMobile, @HORemark, @HOCheckInDate, @HOCheckOutDate, @HOLastCheckInTime, @HOAddId, @HOAddName, @HOAddDepartId, @HOAddDepartName, @HOAddTime, @HOUpdateId, @HOUpdateName, @HOUpdateTime)");
             var para = new DynamicParameters();
             para.Add("@HOCustomerSerialId", model.HOCustomerSerialId);
             para.Add("@HIId", model.HIId);
@@ -381,9 +381,14 @@ namespace HotelBase.Api.DataAccess.Order
             para.Add("@HRRName", model.HRRName);
             para.Add("@HOSupplierId", model.HOSupplierId);
             para.Add("@HOSupperlierName", model.HOSupperlierName ?? "");
+            para.Add("@HODistributorId", model.HODistributorId);
+            para.Add("@HODistributorName", model.HODistributorName ?? "");
             para.Add("@HOSupplierSourceId", model.HOSupplierSourceId);
             para.Add("@HOSupplierSourceName", model.HOSupplierSourceName ?? "");
             para.Add("@HOOutSerialId", model.HOOutSerialId ?? "");
+            para.Add("@HODistributorSerialId", model.HODistributorSerialId ?? "");
+            para.Add("@HOSupplierCorfirmSerialId", model.HOSupplierCorfirmSerialId ?? "");
+            para.Add("@HONight", model.HONight);
             para.Add("@HOSupplierSerialId", model.HOSupplierSerialId ?? "");
             para.Add("@HOStatus", model.HOStatus);
             para.Add("@HOPayStatus", model.HOPayStatus);
@@ -471,7 +476,7 @@ namespace HotelBase.Api.DataAccess.Order
         }
 
         /// <summary>
-        /// 更新供应商订单号和分销商订单号
+        /// 更新供应商订单
         /// </summary>
         /// <param name="orderserialid"></param>
         /// <returns></returns>
@@ -479,7 +484,7 @@ namespace HotelBase.Api.DataAccess.Order
         {
             if (string.IsNullOrWhiteSpace(orderserialid)) return 0;
             var sql = new StringBuilder();
-            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}',HODistributorSerialId='{1}'  WHERE HOCustomerSerialId='{1}'", supplierserialid, orderserialid, status);
+            sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOSupplierSerialId='{0}',HOStatus='{2}'  WHERE HOCustomerSerialId='{1}'", supplierserialid, orderserialid, status);
             var c = MysqlHelper.Update(sql.ToString());
             return c;
         }
