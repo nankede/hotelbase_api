@@ -21,7 +21,7 @@ namespace HotelBase.Api.Service
         {
             return Ho_HotelOrderAccess.GetOrderList(request);
         }
-        
+
         /// <summary>
         /// 获取订单详情--根据订单主键id
         /// </summary>
@@ -75,15 +75,25 @@ namespace HotelBase.Api.Service
         }
 
         /// <summary>
+        /// 预定资源查询
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static H_HoteRulePriceModel GetHotelPriceList(int roomid, DateTime begin, DateTime end)
+        {
+            return Ho_HotelOrderAccess.GetHotelPriceList(roomid, begin, end);
+        }
+
+        /// <summary>
         /// 录单详情页酒店信息查询
         /// </summary>
         /// <param name="hotelid"></param>
         /// <param name="roomid"></param>
         /// <param name="rooleid"></param>
         /// <returns></returns>
-        public static BookSearchResponse GetHotelRuleDetial(int hotelid, int roomid, int rooleid,int supplierid)
+        public static BookSearchResponse GetHotelRuleDetial(int hotelid, int roomid, int rooleid, int supplierid)
         {
-            return Ho_HotelOrderAccess.GetHotelRuleDetial(hotelid,roomid,rooleid, supplierid);
+            return Ho_HotelOrderAccess.GetHotelRuleDetial(hotelid, roomid, rooleid, supplierid);
         }
 
         /// <summary>
@@ -122,7 +132,7 @@ namespace HotelBase.Api.Service
         /// <returns></returns>
         public static BaseResponse SetOrder(int id, int type, int state, string serialid)
         {
-            var i = Ho_HotelOrderAccess.UpdateOrderSerialid(id,type, state, serialid);
+            var i = Ho_HotelOrderAccess.UpdateOrderSerialid(id, type, state, serialid);
             var res = new BaseResponse
             {
                 IsSuccess = i > 0 ? 1 : 0,
@@ -131,7 +141,7 @@ namespace HotelBase.Api.Service
             return res;
         }
 
-        
+
         /// <summary>
         /// 更新订单
         /// </summary>
@@ -142,7 +152,7 @@ namespace HotelBase.Api.Service
         public static int UpdatesSupplierSerialid(string orderserialid, string supplierserialid, string disserialid)
         {
             var i = Ho_HotelOrderAccess.UpdatesSupplierSerialid(orderserialid, supplierserialid, disserialid);
-            
+
             return i;
         }
 
@@ -152,9 +162,9 @@ namespace HotelBase.Api.Service
         /// <param name="orderserialid"></param>
         /// <param name="supplierserialid"></param>
         /// <returns></returns>
-        public static int UpdatesSupplier(string orderserialid, string supplierserialid,int status)
+        public static int UpdatesSupplier(string orderserialid, string supplierserialid, int status)
         {
-            var i = Ho_HotelOrderAccess.UpdatesSupplier(orderserialid, supplierserialid,status);
+            var i = Ho_HotelOrderAccess.UpdatesSupplier(orderserialid, supplierserialid, status);
 
             return i;
         }

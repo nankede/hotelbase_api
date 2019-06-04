@@ -263,6 +263,32 @@ namespace HotelBase.Api.DataAccess.Order
 
 
         /// <summary>
+        /// 获取价格
+        /// </summary>
+        /// <param name="roomid"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        public static H_HoteRulePriceModel GetHotelPriceList(int roomid, DateTime begin, DateTime end)
+        {
+            StringBuilder sbwhere = new StringBuilder();
+            //房型id
+            sbwhere.AppendFormat(" AND  rr.HRRId = {0}", roomid);
+            sbwhere.AppendFormat(" AND  rr.HRPDate >= '{0}'", begin);
+            sbwhere.AppendFormat(" AND  rr.HRPDate < '{0}'", end);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat(@"SELECT
+	                        *
+                        FROM
+	                        h_hoteruleprice rr
+                        WHERE
+	                        1 = 1 {0}", sbwhere.ToString());
+
+            var list = MysqlHelper.GetList<H_HoteRulePriceModel>(sb.ToString());
+            return list.FirstOrDefault();
+        }
+
+        /// <summary>
         /// 录单详情页酒店信息查询
         /// </summary>
         /// <param name="hid"></param>

@@ -92,11 +92,11 @@ namespace HotelBase.Api.Controllers
                             HOSupplierSourceName = hotelinfo.HotelSupplierSourceName,
                             HODistributorSerialId = item.thirdOrderNo,
                             HORoomCount = item.roomNum,
-                            HONight = item.roomNum,
+                            HONight = GetNight(Convert.ToDateTime(item.departure), Convert.ToDateTime(item.arrival), item.roomNum),
                             HOLinkerName = item.contactName,
                             HOCustomerName = item.guestName,
-                            HOContractPrice = Convert.ToDecimal(item.basePrice),
-                            HOSellPrice = Convert.ToDecimal(item.roomPrice),
+                            HOContractPrice = Convert.ToDecimal(item.roomPrice),
+                            HOSellPrice = Convert.ToDecimal(item.basePrice),
                             HOCheckInDate = Convert.ToDateTime(item.arrival),
                             HOCheckOutDate = Convert.ToDateTime(item.departure),
                             HOLastCheckInTime = item.assureTime,
@@ -122,18 +122,29 @@ namespace HotelBase.Api.Controllers
                             HOLAddDepartName = "系统",
                             HOLAddTime = DateTime.Now
                         };
+                        var price = OrderBll.GetHotelPriceList(newmodel.HRRId, newmodel.HOCheckInDate, newmodel.HOCheckOutDate);
+                        if (price != null && price.Id > 0)
+                        {
+                            if (newmodel.HOSellPrice > price.HRPContractPrice)
+                            {
+                                issned = true;
+                            }
+                            else
+                            {
+                                newmodel.HOStatus = 2;
+                            }
+                        }
                         OrderLogBll.AddOrderModel(logmodel);
                         var response = OrderBll.AddOrderModel(newmodel);
                         orderseridid = newmodel.HOCustomerSerialId;
                         #endregion
                     }
                 }
-                if (!string.IsNullOrWhiteSpace(orderseridid))
+                if (!string.IsNullOrWhiteSpace(orderseridid) && issned)
                 {
                     var order = OrderBll.GetModel(orderseridid);
                     if (order.Id > 0)
                     {
-                        issned = true;
                         var search = new OrderPriceSearchRequest
                         {
                             HotelId = order.HIId,
@@ -174,8 +185,8 @@ namespace HotelBase.Api.Controllers
                             subSource = 0,
                             roomRateTypeId = 28,
                             thirdOrderNo = order.HODistributorSerialId,
-                            basePrice = order.HOContractPrice.ToString(),
-                            roomPrice = order.HOSellPrice.ToString(),
+                            //basePrice = order.HOContractPrice.ToString(),
+                            roomPrice = order.HOContractPrice.ToString(),
                             productSerial = order.OutProductSerial,
                             outCode = order.OutRoomCode
                         };
@@ -297,6 +308,7 @@ namespace HotelBase.Api.Controllers
         public DataResult XiWanOrder(CreateRequset createrequset, string orderseriald)
         {
             var result = new DataResult();
+            result.Code = DataResultType.Fail;
             var item = createrequset.orderModel;
             var request = new XiWanOrderRequest();
             request.DistributeOrderNo = !string.IsNullOrWhiteSpace(item.thirdOrderNo) ? item.thirdOrderNo : orderseriald;
@@ -308,14 +320,15 @@ namespace HotelBase.Api.Controllers
             request.RoomNum = item.roomNum;
             request.LeaveDate = Convert.ToDateTime(item.departure).Date;
             request.LastArriveTime = "18:00";
-            request.TotalPrice = Convert.ToDecimal(item.basePrice);
+            request.TotalPrice = Convert.ToDecimal(item.roomPrice);
             request.ContactName = item.contactName;
             request.ContactMobile = item.mobile;
             request.GuestNames = item.guestName.Split(',');
             request.NoteToHotel = !string.IsNullOrWhiteSpace(item.remark) ? item.remark : "无";
             var rtn = XiWanAPI.XiWanPost<XiWanOrderResponse, XiWanOrderRequest>(request, HotelOrderUrl);
+            result.Message = JsonConvert.SerializeObject(rtn);
             var order = rtn?.Result;
-            if (!string.IsNullOrWhiteSpace(order.OrderNo))
+            if (rtn.Code == "0" && !string.IsNullOrWhiteSpace(order.OrderNo))
             {
                 result.Code = DataResultType.Sucess;
                 result.Data = Encrypt.DESEncrypt(order.OrderNo);
@@ -325,13 +338,27 @@ namespace HotelBase.Api.Controllers
             else
             {
                 result.Code = DataResultType.Fail;
-                result.Message = rtn?.Msg;
+                result.Message = JsonConvert.SerializeObject(rtn);
                 OrderBll.UpdatesSupplier(orderseriald, "", 2);
             }
             return result;
         }
 
         #region Common
+
+        /// <summary>
+        /// 获取间夜数
+        /// </summary>
+        /// <param name="end"></param>
+        /// <param name="begin"></param>
+        /// <param name="roomnum"></param>
+        /// <returns></returns>
+        public int GetNight(DateTime end, DateTime begin, int roomnum)
+        {
+            TimeSpan txt = end - begin;
+            return txt.Days * roomnum;
+        }
+
         /// <summary>
         /// 获取名称
         /// </summary>
@@ -525,7 +552,7 @@ namespace HotelBase.Api.Controllers
         {
             var result = new DataResult();
             var ordermodel = OrderBll.GetModel(orderid);
-            if (ordermodel.Id > 0)
+            if (ordermodel.Id > 0 && !string.IsNullOrWhiteSpace(ordermodel.HOSupplierSerialId))
             {
                 var orderquery = new XiWanOrderQueryRequest { OrderNo = ordermodel.HOSupplierSerialId };
                 var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
