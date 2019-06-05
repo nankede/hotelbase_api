@@ -79,7 +79,7 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static H_HoteRulePriceModel GetHotelPriceList(int roomid, DateTime begin, DateTime end)
+        public static List<H_HoteRulePriceModel> GetHotelPriceList(int roomid, DateTime begin, DateTime end)
         {
             return Ho_HotelOrderAccess.GetHotelPriceList(roomid, begin, end);
         }

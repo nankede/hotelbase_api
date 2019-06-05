@@ -50,6 +50,7 @@ namespace HotelBase.Api.Controllers
             var result = new DataResult();
             var createrequset = new CreateRequset();
             bool issned = false;
+            var ruleid = 0;
             try
             {
                 using (StreamReader sr = new StreamReader(HttpContext.Current.Request.GetBufferedInputStream()))
@@ -122,10 +123,12 @@ namespace HotelBase.Api.Controllers
                             HOLAddDepartName = "系统",
                             HOLAddTime = DateTime.Now
                         };
+                        ruleid = newmodel.HRRId;
                         var price = OrderBll.GetHotelPriceList(newmodel.HRRId, newmodel.HOCheckInDate, newmodel.HOCheckOutDate);
-                        if (price != null && price.Id > 0)
+                        if (price != null && price.Any())
                         {
-                            if (newmodel.HOSellPrice > price.HRPContractPrice)
+                            var total = price.Sum(s => s.HRPContractPrice) * newmodel.HORoomCount;
+                            if (newmodel.HOSellPrice > total)
                             {
                                 issned = true;
                             }
@@ -133,6 +136,7 @@ namespace HotelBase.Api.Controllers
                             {
                                 newmodel.HOStatus = 2;
                             }
+
                         }
                         OrderLogBll.AddOrderModel(logmodel);
                         var response = OrderBll.AddOrderModel(newmodel);
@@ -197,10 +201,10 @@ namespace HotelBase.Api.Controllers
                     switch (createrequset.supplierSourceId)
                     {
                         case 1:
-                            result = AtourOrder(createrequset, orderseridid);
+                            result = AtourOrder(createrequset, orderseridid, ruleid);
                             break;
                         case 2:
-                            result = XiWanOrder(createrequset, orderseridid);
+                            result = XiWanOrder(createrequset, orderseridid, ruleid);
                             break;
                     }
                     return result;
@@ -218,8 +222,9 @@ namespace HotelBase.Api.Controllers
         /// </summary>
         /// <param name="createrequset"></param>
         /// <param name="orderseridid"></param>
+        /// <param name="ruleid"></param>
         /// <returns></returns>
-        public DataResult AtourOrder(CreateRequset createrequset, string orderseridid)
+        public DataResult AtourOrder(CreateRequset createrequset, string orderseridid, int ruleid)
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
@@ -304,8 +309,9 @@ namespace HotelBase.Api.Controllers
         /// </summary>
         /// <param name="createrequset"></param>
         /// <param name="orderseriald"></param>
+        /// <param name="ruleid"></param>
         /// <returns></returns>
-        public DataResult XiWanOrder(CreateRequset createrequset, string orderseriald)
+        public DataResult XiWanOrder(CreateRequset createrequset, string orderseriald, int ruleid)
         {
             var result = new DataResult();
             result.Code = DataResultType.Fail;
@@ -328,12 +334,21 @@ namespace HotelBase.Api.Controllers
             var rtn = XiWanAPI.XiWanPost<XiWanOrderResponse, XiWanOrderRequest>(request, HotelOrderUrl);
             result.Message = JsonConvert.SerializeObject(rtn);
             var order = rtn?.Result;
+            var price = OrderBll.GetHotelPriceList(ruleid, Convert.ToDateTime(item.arrival), Convert.ToDateTime(item.departure));
             if (rtn.Code == "0" && !string.IsNullOrWhiteSpace(order.OrderNo))
             {
                 result.Code = DataResultType.Sucess;
                 result.Data = Encrypt.DESEncrypt(order.OrderNo);
                 OrderBll.UpdatesSupplier(orderseriald, order.OrderNo, 0);
 
+                if (price != null && price.Any())
+                {
+                    foreach (var i in price)
+                    {
+                        i.HRPCount = i.HRPCount - 1 >= 0 ? i.HRPCount - 1 : 0;
+                        HotelRoomRuleBll.UpdateCount(i);
+                    }
+                }
             }
             else
             {

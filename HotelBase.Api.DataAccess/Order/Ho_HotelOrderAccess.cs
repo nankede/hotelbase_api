@@ -269,7 +269,7 @@ namespace HotelBase.Api.DataAccess.Order
         /// <param name="begin"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        public static H_HoteRulePriceModel GetHotelPriceList(int roomid, DateTime begin, DateTime end)
+        public static List<H_HoteRulePriceModel> GetHotelPriceList(int roomid, DateTime begin, DateTime end)
         {
             StringBuilder sbwhere = new StringBuilder();
             //房型id
@@ -285,7 +285,7 @@ namespace HotelBase.Api.DataAccess.Order
 	                        1 = 1 {0}", sbwhere.ToString());
 
             var list = MysqlHelper.GetList<H_HoteRulePriceModel>(sb.ToString());
-            return list.FirstOrDefault();
+            return list;
         }
 
         /// <summary>

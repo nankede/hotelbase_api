@@ -127,5 +127,27 @@ namespace HotelBase.Api.Service
             };
             return res;
         }
+
+        /// <summary>
+        /// 修改库存
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public static BaseResponse UpdateCount(H_HoteRulePriceModel model)
+        {
+            var res = new BaseResponse();
+            if (model.Id <= 0)
+            {
+                res.Msg = "无效的政策";
+                return res;
+            }
+            var i = new H_HoteRulePriceAccess().Update(model);
+            res = new BaseResponse
+            {
+                IsSuccess = i ? 1 : 0,
+                Msg = i ? string.Empty : "更新失败",
+            };
+            return res;
+        }
     }
 }
