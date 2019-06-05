@@ -131,6 +131,7 @@ namespace HotelBase.Api.Controllers
                             if (newmodel.HOSellPrice > total)
                             {
                                 issned = true;
+                                newmodel.HOContractPrice = total;
                             }
                             else
                             {
