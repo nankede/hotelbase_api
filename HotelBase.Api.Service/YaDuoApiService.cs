@@ -386,10 +386,10 @@ namespace HotelBase.Api.Service
                             };
                             oldRule.Id = (int)rrDb.Add(oldRule);
                         }
-                        else
-                        {
-                            rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 1).Execute();
-                        }
+                        //else
+                        //{
+                        //    rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 1).Execute();
+                        //}
                         if (oldRule != null && oldRule.Id > 0)
                         {
                             var date = DateTime.MinValue;
