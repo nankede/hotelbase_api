@@ -388,7 +388,7 @@ namespace HotelBase.Api.Service
                         }
                         else
                         {
-                            rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 4).Execute();
+                            rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 1).Execute();
                         }
                         if (oldRule != null && oldRule.Id > 0)
                         {
