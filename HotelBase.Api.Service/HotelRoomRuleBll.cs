@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HotelBase.Api.DataAccess.Resource;
+using Newtonsoft.Json;
 
 namespace HotelBase.Api.Service
 {
@@ -123,7 +124,7 @@ namespace HotelBase.Api.Service
             var res = new BaseResponse
             {
                 IsSuccess = i > 0 ? 1 : 0,
-                Msg = i > 0 ? string.Empty : "更新失败",
+                Msg = i > 0 ? "更新成功" : "更新失败",
             };
             return res;
         }
@@ -145,7 +146,7 @@ namespace HotelBase.Api.Service
             res = new BaseResponse
             {
                 IsSuccess = i ? 1 : 0,
-                Msg = i ? string.Empty : "更新失败",
+                Msg = i ? "更新成功" : "更新失败",
             };
             return res;
         }

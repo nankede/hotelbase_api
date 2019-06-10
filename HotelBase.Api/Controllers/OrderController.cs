@@ -333,21 +333,39 @@ namespace HotelBase.Api.Controllers
             request.GuestNames = item.guestName.Split(',');
             request.NoteToHotel = !string.IsNullOrWhiteSpace(item.remark) ? item.remark : "无";
             var rtn = XiWanAPI.XiWanPost<XiWanOrderResponse, XiWanOrderRequest>(request, HotelOrderUrl);
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
+            {
+                HOLOrderId = orderseriald,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now
+            };
+            logmodel.HOLRemark = "喜玩下单请求：" + JsonConvert.SerializeObject(request) + "||喜玩下单接口返回：" + JsonConvert.SerializeObject(rtn);
+            OrderLogBll.AddOrderModel(logmodel);
             result.Message = JsonConvert.SerializeObject(rtn);
             var order = rtn?.Result;
             var price = OrderBll.GetHotelPriceList(ruleid, Convert.ToDateTime(item.arrival), Convert.ToDateTime(item.departure));
             if (rtn.Code == "0" && !string.IsNullOrWhiteSpace(order.OrderNo))
             {
                 result.Code = DataResultType.Sucess;
-                result.Data = Encrypt.DESEncrypt(order.OrderNo);
-                OrderBll.UpdatesSupplier(orderseriald, order.OrderNo, 0);
-
+                result.Data = orderseriald;
+                logmodel.HOLRemark = "喜玩更新供应商订单流水号：流水号=" + order.OrderNo;
+                var upserialid = OrderBll.UpdatesSupplier(orderseriald, order.OrderNo, 0);
+                logmodel.HOLRemark = "更新结果：" + (upserialid > 0 ? "更新成功" : "更新失败");
+                OrderLogBll.AddOrderModel(logmodel);
                 if (price != null && price.Any())
                 {
                     foreach (var i in price)
                     {
+                        logmodel.HOLRemark = "喜玩更新库存：原有库存=" + i.HRPCount;
                         i.HRPCount = i.HRPCount - 1 >= 0 ? i.HRPCount - 1 : 0;
-                        HotelRoomRuleBll.UpdateCount(i);
+                        var up = HotelRoomRuleBll.UpdateCount(i);
+                        logmodel.HOLRemark += "，更新后库存=" + i.HRPCount + "，更新结果：" + up.Msg;
+                        OrderLogBll.AddOrderModel(logmodel);
                     }
                 }
             }
@@ -397,6 +415,32 @@ namespace HotelBase.Api.Controllers
             var roomDb = new H_HotelRoomAccess();
             var oldRoom = roomDb.Query().Where(rd => rd.HROutId == Convert.ToInt32(roomid)).FirstOrDefault();
             return oldRoom.HRName;
+        }
+
+        /// <summary>
+        /// 获取订单状态
+        /// </summary>
+        /// <param name="status"></param>
+        /// <returns></returns>
+        public string GetStatus(int status)
+        {
+            var collect = "";
+            switch (status)
+            {
+                case 0:
+                    collect = "待确认";
+                    break;
+                case 1:
+                    collect = "预定成功";
+                    break;
+                case 2:
+                    collect = "酒店下单失败";
+                    break;
+                case 3:
+                    collect = "取消成功";
+                    break;
+            }
+            return collect;
         }
 
         #endregion
@@ -568,34 +612,60 @@ namespace HotelBase.Api.Controllers
         {
             var result = new DataResult();
             var ordermodel = OrderBll.GetModel(orderid);
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
+            {
+                HOLOrderId = orderid,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now
+            };
             if (ordermodel.Id > 0 && !string.IsNullOrWhiteSpace(ordermodel.HOSupplierSerialId))
             {
                 var orderquery = new XiWanOrderQueryRequest { OrderNo = ordermodel.HOSupplierSerialId };
+                
                 var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
+                logmodel.HOLRemark = "喜玩查询订单接口返回：" + JsonConvert.SerializeObject(rtn);
+                OrderLogBll.AddOrderModel(logmodel);
                 if (rtn.Code == "0")
                 {
                     var order = rtn?.Result;
                     if (order.Status >= 0)
                     {
                         result.Code = DataResultType.Sucess;
-                        OrderBll.UpdatesSataus(orderid, order.Status);
+                        logmodel.HOLRemark = "喜玩订单更新：喜玩返回订单状态" + order.Status + "(喜玩状态备注：处理中 = 1,取消 = 2,已确认 = 3,已入住 = 4,不确认 = 5,取消中 = 6)" + "我方订单状态：" + GetStatus(ordermodel.HOStatus);
+                        OrderLogBll.AddOrderModel(logmodel);
+
+                        var up = OrderBll.UpdatesSataus(orderid, order.Status);
+                        var neworder = OrderBll.GetModel(orderid);
+                        logmodel.HOLRemark = "我方订单更新：更新结果=" + (up > 0 ? "更新成功" : "更新失败") + "当前订单状态：" + GetStatus(neworder.HOStatus);
+                        OrderLogBll.AddOrderModel(logmodel);
                     }
                     else
                     {
                         result.Code = DataResultType.Fail;
                         result.Message = rtn?.Msg;
+                        logmodel.HOLRemark = "喜玩订单更新：接口返回失败，失败原因:" + rtn?.Msg;
+                        OrderLogBll.AddOrderModel(logmodel);
                     }
                 }
                 else
                 {
                     result.Code = DataResultType.Fail;
                     result.Message = rtn?.Msg;
+                    logmodel.HOLRemark = "喜玩订单更新：接口返回失败，失败原因:" + rtn?.Msg;
+                    OrderLogBll.AddOrderModel(logmodel);
                 }
             }
             else
             {
                 result.Code = DataResultType.Fail;
                 result.Message = "未查询到相关订单";
+                logmodel.HOLRemark = result.Message;
+                OrderLogBll.AddOrderModel(logmodel);
             }
             return result;
         }
