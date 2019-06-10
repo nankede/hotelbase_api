@@ -626,7 +626,7 @@ namespace HotelBase.Api.Controllers
             if (ordermodel.Id > 0 && !string.IsNullOrWhiteSpace(ordermodel.HOSupplierSerialId))
             {
                 var orderquery = new XiWanOrderQueryRequest { OrderNo = ordermodel.HOSupplierSerialId };
-                
+
                 var rtn = XiWanAPI.XiWanPost<XiWanOrderQueryResponse, XiWanOrderQueryRequest>(orderquery, HotelOrderQueryUrl);
                 logmodel.HOLRemark = "喜玩查询订单接口返回：" + JsonConvert.SerializeObject(rtn);
                 OrderLogBll.AddOrderModel(logmodel);
@@ -663,7 +663,7 @@ namespace HotelBase.Api.Controllers
             else
             {
                 result.Code = DataResultType.Fail;
-                result.Message = "未查询到相关订单";
+                result.Message = "未查询到相关订单,当前查询订单流水号：" + orderid;
                 logmodel.HOLRemark = result.Message;
                 OrderLogBll.AddOrderModel(logmodel);
             }
