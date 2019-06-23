@@ -248,8 +248,8 @@ namespace HotelBase.Api.Service
                                 HRRoomSIze = string.Empty,
                                 HRAddName = "亚朵新增",
                                 HRAddTime = DateTime.Now,
+                                HRBedType = GetBedType(l.bedRemark),
                                 HRBedSize = GetBedSize(l.bedRemark),
-                                HRBedType = 0,
                                 HRFloor = string.Empty,
                                 HRIsValid = 1,
                                 HRPersonCount = 0,
@@ -257,6 +257,16 @@ namespace HotelBase.Api.Service
                                 HRUpdateTime = DateTime.Now,
                                 HRWindowsType = 0
                             });
+                        }
+                        else
+                        {
+                            if (baseRoom.HRBedType == 0)
+                            {
+                                db.Update().Set(rr => rr.HRBedType == GetBedType(l.bedRemark))
+                                .Set(rr => rr.HRBedSize == GetBedSize(l.bedRemark))
+                                .Where(rr => rr.Id == baseRoom.Id).Execute();
+                            }
+
                         }
                         //是否要修改
                     });
@@ -283,18 +293,29 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="remark"></param>
         /// <returns></returns>
-        public static int GetBedSize(string remark)
+        public static int GetBedType(string remark)
         {
-            if (remark == "大床")
+            if (remark.Contains("大床"))
             {
                 return 50101;
             }
-            if (remark == "双床")
+            if (remark.Contains("双床") || remark.Contains("标间"))
             {
                 return 50102;
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="remark"></param>
+        /// <returns></returns>
+        public static int GetBedSize(string remark)
+        {
+            var type = GetBedType(remark);
+            return type == 50101 ? 50203 : 50202;
         }
 
 

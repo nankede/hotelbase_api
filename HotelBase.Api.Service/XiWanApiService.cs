@@ -256,8 +256,8 @@ namespace HotelBase.Api.Service
                                     Id = 0,
                                     HRAddName = "喜玩新增",
                                     HRAddTime = DateTime.Now,
-                                    HRBedSize = 0,
                                     HRBedType = GetBedType(r.RoomName, r.BedType),//需要转化
+                                    HRBedSize = GetBedSize(r.RoomName, r.BedType),
                                     HRFloor = string.Empty,
                                     HRIsValid = 1,
                                     HRName = r.RoomName ?? String.Empty,
@@ -275,7 +275,9 @@ namespace HotelBase.Api.Service
                             {//修改暂时不弄
                                 if (oldRoom.HRBedType == 0)
                                 {
-                                    roomDb.Update().Set(rr => rr.HRBedType == GetBedType(r.RoomName, r.BedType)).Where(rr => rr.Id == oldRoom.Id).Execute();
+                                    roomDb.Update().Set(rr => rr.HRBedType == GetBedType(r.RoomName, r.BedType))
+                                    .Set(rr => rr.HRBedSize == GetBedSize(r.RoomName, r.BedType))
+                                    .Where(rr => rr.Id == oldRoom.Id).Execute();
                                 }
                             }
 
@@ -399,10 +401,9 @@ namespace HotelBase.Api.Service
             /// 上下铺 = 6, 通铺 = 7, 榻榻米 = 8, 水床 = 9, 圆床 = 10, 拼床 = 11, 子母床 = 12,
             /// 多床 = 13, 其他床型 = 999
 
-
             var type = 0;
 
-            if (roomName.Contains("大床") || roomName.Contains("大床"))
+            if (roomName.Contains("大床"))
             {
                 type = 50101;
             }
@@ -410,23 +411,64 @@ namespace HotelBase.Api.Service
             {
                 type = 50102;
             }
+            else if (roomName.Contains("三人"))
+            {
+                type = 50103;
+            }
             else
             {
                 switch (bedType)
                 {
                     case 0:
-                    case 2:
                         type = 50101;
                         break;
                     case 1:
-                    case 3:
                         type = 50102;
+                        break;
+                    case 2:
+                        type = 50105;
+                        break;
+                    case 3:
+                        type = 50103;
                         break;
 
                 }
             }
 
             return type;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="remark"></param>
+        /// <returns></returns>
+        public static int GetBedSize(string roomName, int bedType)
+        {
+            /// 大床 = 0, 双床 = 1, 大床或双床 = 2, 三床 = 3, 四床 = 4, 单人床 = 5,
+            /// 上下铺 = 6, 通铺 = 7, 榻榻米 = 8, 水床 = 9, 圆床 = 10, 拼床 = 11, 子母床 = 12,
+            /// 多床 = 13, 其他床型 = 999
+
+            var type = GetBedType(roomName, bedType);
+            var size = 50203;//默认1.8
+            switch (type)
+            {
+                case 50101:
+                    size = 50203;//1.8
+                    break;
+                case 50102:
+                    size = 50202;//1.5
+                    break;
+                case 50105:
+                    size = 50203;
+                    break;
+                case 50103:
+                    size = 50202;
+                    break;
+            }
+
+            return size;
         }
 
     }
