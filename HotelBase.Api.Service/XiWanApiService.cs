@@ -257,7 +257,7 @@ namespace HotelBase.Api.Service
                                     HRAddName = "喜玩新增",
                                     HRAddTime = DateTime.Now,
                                     HRBedSize = 0,
-                                    HRBedType = r.BedType,//需要转化
+                                    HRBedType = GetBedType(r.RoomName, r.BedType),//需要转化
                                     HRFloor = string.Empty,
                                     HRIsValid = 1,
                                     HRName = r.RoomName ?? String.Empty,
@@ -273,7 +273,10 @@ namespace HotelBase.Api.Service
                             }
                             else
                             {//修改暂时不弄
-
+                                if (oldRoom.HRBedType == 0)
+                                {
+                                    roomDb.Update().Set(rr => rr.HRBedType == GetBedType(r.RoomName, r.BedType)).Where(rr => rr.Id == oldRoom.Id).Execute();
+                                }
                             }
 
                             if (oldRoom.Id > 0)
@@ -390,18 +393,40 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="remark"></param>
         /// <returns></returns>
-        public static int GetBedSize(string remark)
+        public static int GetBedType(string roomName, int bedType)
         {
-            if (remark == "大床")
+            /// 大床 = 0, 双床 = 1, 大床或双床 = 2, 三床 = 3, 四床 = 4, 单人床 = 5,
+            /// 上下铺 = 6, 通铺 = 7, 榻榻米 = 8, 水床 = 9, 圆床 = 10, 拼床 = 11, 子母床 = 12,
+            /// 多床 = 13, 其他床型 = 999
+
+
+            var type = 0;
+
+            if (roomName.Contains("大床") || roomName.Contains("大床"))
             {
-                return 50101;
+                type = 50101;
             }
-            if (remark == "双床")
+            else if (roomName.Contains("双床") || roomName.Contains("标间"))
             {
-                return 50102;
+                type = 50102;
+            }
+            else
+            {
+                switch (bedType)
+                {
+                    case 0:
+                    case 2:
+                        type = 50101;
+                        break;
+                    case 1:
+                    case 3:
+                        type = 50102;
+                        break;
+
+                }
             }
 
-            return 0;
+            return type;
         }
 
     }
