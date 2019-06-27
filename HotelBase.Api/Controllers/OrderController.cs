@@ -379,7 +379,18 @@ namespace HotelBase.Api.Controllers
                     var upstock = XiWanApiService.Xw_HotelPrice(qlhotelid);
                     logmodel.HOLRemark = "满房或价格变动更新酒店库存和价格：酒店id：" + qlhotelid + "，更新结果：" + upstock.Code;
                     OrderLogBll.AddOrderModel(logmodel);
+                    if (rtn.Msg.Contains("存在日期满房"))
+                    {
+                        if (price != null && price.Any())
+                        {
+                            var i = price.OrderBy(s => s.HRPDate).FirstOrDefault();
+                            i.HRPCount = 0;
+                            var up = HotelRoomRuleBll.UpdateCount(i);
+                            logmodel.HOLRemark = "满房更新库存：待更新信息：" + JsonConvert.SerializeObject(i) + "，更新结果：" + up.IsSuccess;
+                            OrderLogBll.AddOrderModel(logmodel);
+                        }
 
+                    }
                     if (rtn.Msg.Contains("总价应为"))
                     {
                         var neworder = OrderBll.GetModel(orderseriald);
