@@ -255,8 +255,8 @@ namespace HotelBase.Api.Service
                                 HRRoomSIze = string.Empty,
                                 HRAddName = "亚朵新增",
                                 HRAddTime = DateTime.Now,
-                                HRBedType = GetBedType(l.bedRemark),
-                                HRBedSize = GetBedSize(l.bedRemark),
+                                HRBedType = GetBedType(l.bedRemark, l.roomTypeName ?? string.Empty),
+                                HRBedSize = GetBedSize(l.bedRemark, l.roomTypeName ?? string.Empty),
                                 HRFloor = string.Empty,
                                 HRIsValid = 1,
                                 HRPersonCount = 0,
@@ -269,8 +269,9 @@ namespace HotelBase.Api.Service
                         {
                             if (baseRoom.HRBedType == 0)
                             {
-                                db.Update().Set(rr => rr.HRBedType == GetBedType(l.bedRemark))
-                                .Set(rr => rr.HRBedSize == GetBedSize(l.bedRemark))
+                                db.Update().Set(rr => rr.HRBedType == GetBedType(l.bedRemark, l.roomTypeName ?? string.Empty))
+                                .Set(rr => rr.HRBedSize == GetBedSize(l.bedRemark, l.roomTypeName ?? string.Empty))
+                                .Set(rr => rr.HRUpdateTime == DateTime.Now)
                                 .Where(rr => rr.Id == baseRoom.Id).Execute();
                             }
 
@@ -300,13 +301,15 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="remark"></param>
         /// <returns></returns>
-        public static int GetBedType(string remark)
+        public static int GetBedType(string remark, string roomName)
         {
-            if (remark.Contains("大床"))
+            remark = remark ?? string.Empty;
+            roomName = roomName ?? string.Empty;
+            if (remark.Contains("大床") || roomName.Contains("大床"))
             {
                 return 50101;
             }
-            if (remark.Contains("双床") || remark.Contains("标间"))
+            if (remark.Contains("双床") || remark.Contains("标间") || roomName.Contains("标间") || roomName.Contains("双床"))
             {
                 return 50102;
             }
@@ -319,9 +322,9 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="remark"></param>
         /// <returns></returns>
-        public static int GetBedSize(string remark)
+        public static int GetBedSize(string remark, string roomName)
         {
-            var type = GetBedType(remark);
+            var type = GetBedType(remark, roomName);
             return type == 50101 ? 50203 : 50202;
         }
 
