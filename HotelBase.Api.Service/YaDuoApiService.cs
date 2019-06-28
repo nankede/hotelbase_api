@@ -228,6 +228,13 @@ namespace HotelBase.Api.Service
                 var list = rtn?.result;
                 if (list?.Count > 0)
                 {
+                    if (x.HIIsValid == 0)
+                    {
+                        hDb.Update().Where(h => h.Id == x.Id)
+                           .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "亚朵更新有效" && h.HIUpdateTime == DateTime.Now)
+                           .Execute();
+                    }
+
                     var listId = list.Select(l => l.roomTypeId).ToList();
                     var db = new H_HotelRoomAccess();
                     var room = db.Query().Where(r => r.HIId == x.Id).ToList();

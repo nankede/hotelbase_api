@@ -243,7 +243,13 @@ namespace HotelBase.Api.Service
                     }
                     else
                     {
-
+                        if (x.HIIsValid == 0)
+                        {
+                            hDb.Update().Where(h => h.Id == x.Id)
+                           .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "喜玩更新酒店有效" && h.HIUpdateTime == DateTime.Now)
+                           .Execute();
+                            rtn.Message += $"[有效]";
+                        }
                         hotel?.Rooms.ForEach(r =>
                         {
                             var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
