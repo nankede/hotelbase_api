@@ -531,6 +531,7 @@ namespace HotelBase.Api.DataAccess.Order
             switch (status)
             {
                 case 1:
+                case 6:
                     qulangstatus = 0;
                     break;
                 case 3:
@@ -539,7 +540,6 @@ namespace HotelBase.Api.DataAccess.Order
                     break;
                 case 2:
                 case 5:
-                case 6:
                     qulangstatus = 3;
                     break;
             }
