@@ -538,6 +538,7 @@ namespace HotelBase.Api.DataAccess.Order
                     qulangstatus = 1;
                     break;
                 case 2:
+                case 5:
                 case 6:
                     qulangstatus = 3;
                     break;
