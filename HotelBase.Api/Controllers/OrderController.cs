@@ -491,19 +491,23 @@ namespace HotelBase.Api.Controllers
         public DataResult OperatAtourOrder(int searchtype, string orderid, int type)
         {
             var result = new DataResult();
-            //日志
-            var logmodel = new HO_HotelOrderLogModel
+            if (searchtype == 2)
             {
-                HOLOrderId = orderid,
-                HOLLogType = 1,//订单日志
-                HOLAddId = 0,
-                HOLAddName = "系统",
-                HOLAddDepartId = 0,
-                HOLAddDepartName = "系统",
-                HOLAddTime = DateTime.Now,
-                HOLRemark = "操作订单请求：searchtype" + searchtype + "&orderid=" + orderid + "&type=" + type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和}"
-            };
-            OrderLogBll.AddOrderModel(logmodel);
+                //日志
+                var logmodel = new HO_HotelOrderLogModel
+                {
+                    HOLOrderId = orderid,
+                    HOLLogType = 1,//订单日志
+                    HOLAddId = 0,
+                    HOLAddName = "系统",
+                    HOLAddDepartId = 0,
+                    HOLAddDepartName = "系统",
+                    HOLAddTime = DateTime.Now,
+                    HOLRemark = "操作订单请求：searchtype" + searchtype + "&orderid=" + orderid + "&type=" + type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和}"
+                };
+                OrderLogBll.AddOrderModel(logmodel);
+            }
+            
             try
             {
                 if (searchtype == 1)
