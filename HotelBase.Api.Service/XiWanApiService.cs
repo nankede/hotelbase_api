@@ -136,8 +136,8 @@ namespace HotelBase.Api.Service
 
             }
             var provList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 2).ToList();
-
-            hotelList.ForEach(x =>
+            var msgList = new List<string>();
+            Parallel.ForEach(hotelList, new ParallelOptions() { MaxDegreeOfParallelism = 3 }, (x, loopstate) =>
             {
                 var request = new XiWanHotelDetailRequest { HotelId = x.HIOutId };
                 var rtn = XiWanAPI.XiWanPost<XiWanHotelDetail, XiWanHotelDetailRequest>(request, HotelDetailUrl);
@@ -167,15 +167,15 @@ namespace HotelBase.Api.Service
                 }
                 else
                 {
-                    result.Message = rtn?.Msg ?? "系统异常";
+                    msgList.Add(rtn?.Msg ?? "系统异常");
                 }
 
                 //房型等
                 var d1 = Xw_HotelPrice(x.Id);
-                result.Message += $"||{x.Id}:{d1.Message}";
+                msgList.Add($"||{x.Id}:{d1.Message}");
                 Thread.Sleep(10);
-
             });
+            result.Data = msgList;
             return result;
         }
 
