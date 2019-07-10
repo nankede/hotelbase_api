@@ -55,12 +55,14 @@ namespace HotelBase.Api.Service
 
         public static string OpenApiGet(string url)
         {
+            var rtn = string.Empty;
             var isTest = ConfigurationManager.AppSettings["IsTest"];
             if (isTest != "0")
             {//正式环境才调用
-                return ApiHelper.HttpGet(url);
+                rtn = ApiHelper.HttpGet(url);
             }
-            return string.Empty;
+            LogHelper.Info($"OpenApiGet:{url}:{rtn}", "OpenApiGet");
+            return rtn;
         }
 
     }

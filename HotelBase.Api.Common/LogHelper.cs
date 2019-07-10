@@ -31,9 +31,7 @@ namespace HotelBase.Api.Common
         /// <param name="level">日志级别</param>
         /// <param name="operation">动作</param>
         /// <param name="message">消息</param>
-        /// <param name="account">操作者</param>
-        /// <param name="realName">真实姓名</param>
-        public static void Write(Level level, string operation, string message, int account, string realName)
+        public static void Write(Level level, string operation, string message)
         {
             LogEventInfo logEvent = new LogEventInfo();
             logEvent.Message = message;
@@ -58,12 +56,11 @@ namespace HotelBase.Api.Common
                     logEvent.Level = LogLevel.Fatal;
                     break;
             }
-            logEvent.Properties["Account"] = account;
-            logEvent.Properties["RealName"] = realName;
+            //logEvent.Properties["Account"] = 0;
+            //logEvent.Properties["RealName"] = "";
             logEvent.Properties["Operation"] = operation;
-            logEvent.Properties["IP"] = Net.Ip;
-            logEvent.Properties["IPAddress"] = Net.GetAddress(Net.Ip);
-            logEvent.Properties["Browser"] = Net.Browser;
+            //logEvent.Properties["IP"] = IPHelper.Ip;
+            //logEvent.Properties["Browser"] = IPHelper.Browser;
             logger.Log(logEvent);
         }
 
@@ -89,18 +86,18 @@ namespace HotelBase.Api.Common
         /// 信息类型的消息。
         /// </summary>
         /// <param name="message"></param>
-        public static void Info(string message)
+        public static void Info(string message, string operation = "日常记录")
         {
-            logger.Info(message);
+            Write(Level.Info, operation, message);
         }
 
         /// <summary>
         /// 警告信息，一般用于比较重要的场合。
         /// </summary>
         /// <param name="message"></param>
-        public static void Warn(string message)
+        public static void Warn(string message, string operation = "警告信息")
         {
-            logger.Warn(message);
+            Write(Level.Warn, operation, message);
         }
 
         /// <summary>
@@ -109,20 +106,17 @@ namespace HotelBase.Api.Common
         /// <param name="message"></param>
         public static void Error(string message)
         {
-            var current = OperatorProvider.Instance.Current;
-            Write(Level.Error, "程序异常", message, current?.Id ?? 0, current?.Name ?? string.Empty);
+            Write(Level.Error, "程序异常", message);
         }
         /// <summary>
         /// 错误信息。
         /// </summary>
         /// <param name="message"></param>
-        public static void Error(string message, Exception ex = null)
+        public static void Error(string message, Exception ex = null, string operation = "程序异常")
         {
             var log = $"{message},异常堆栈：{ex?.ToString()}";
-            var current = OperatorProvider.Instance.Current;
-            Write(Level.Error, "程序异常", log, current?.Id ?? 0, current?.Name ?? string.Empty);
+            Write(Level.Error, operation, log);
         }
-
 
         /// <summary>
         /// 致命异常信息。一般来讲，发生致命异常之后程序将无法继续执行。

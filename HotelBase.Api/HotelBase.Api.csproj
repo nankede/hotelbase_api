@@ -214,12 +214,14 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="App_Data\" />
+    <Folder Include="App_Data\logs\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Configs\AppSetting.config" />
     <Content Include="Configs\Database.config" />
-    <Content Include="Configs\NLog.config" />
+    <Content Include="Configs\NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <Content Include="SwaggerUI\lib\.DS_Store" />
   </ItemGroup>

@@ -1,4 +1,5 @@
-﻿using HotelBase.Api.Entity;
+﻿using HotelBase.Api.Common;
+using HotelBase.Api.Entity;
 using HotelBase.Api.Entity.CommonModel;
 using HotelBase.Api.Entity.Models;
 using HotelBase.Api.Service;
@@ -27,6 +28,12 @@ namespace HotelBase.Api.Controllers
                 Name = "酒店"
             });
 
+
+            LogHelper.Write(Level.Info, "AAAAAAAAA", $"OpenApiGetAAAAAAAAAAAAAAAAAA");
+            LogHelper.Info("AAAA");
+            LogHelper.Warn("AAAA");
+            LogHelper.Error("AAAA");
+            LogHelper.Error("AAAA", new Exception());
             return Json(s);
         }
 
@@ -175,7 +182,7 @@ namespace HotelBase.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public JsonResult<XiWanPriceHotel> GetHotelPrice(int id, DateTime comeDate,DateTime leaveDate)
+        public JsonResult<XiWanPriceHotel> GetHotelPrice(int id, DateTime comeDate, DateTime leaveDate)
         {
             var rtn = XiWanApiService.GetHotelPrice(id, comeDate.ToString("yyyy-MM-dd"), leaveDate.ToString("yyyy-MM-dd"));
             return Json(rtn);
