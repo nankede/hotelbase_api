@@ -1,6 +1,7 @@
 ﻿using HotelBase.Api.Common;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace HotelBase.Api.Service
         public static string AddRoomInfo(int hotelId)
         {
             var url = $"http://openapi.lyqllx.com/HotelData/AddNewInfo?hotelId={hotelId}";
-            return ApiHelper.HttpGet(url);
+            return OpenApiGet(url);
         }
         /// <summary>
         /// 增量同步酒店
@@ -32,7 +33,7 @@ namespace HotelBase.Api.Service
         {
             var url = $"http://openapi.lyqllx.com/HotelData/SysInfo?hotelId={hotelId}";
 
-            return ApiHelper.HttpGet(url);
+            return OpenApiGet(url);
         }
 
 
@@ -49,9 +50,18 @@ namespace HotelBase.Api.Service
         {
             var url = $"http://openapi.lyqllx.com/HotelData/Offline?hotelId={hotelId}&roomId={roomId}&breakfastRule={bfRule}&roomRuleId={ruleId}&status={status}";
 
-            return ApiHelper.HttpGet(url);
+            return OpenApiGet(url);
         }
 
+        public static string OpenApiGet(string url)
+        {
+            var isTest = ConfigurationManager.AppSettings["IsTest"];
+            if (isTest != "0")
+            {//正式环境才调用
+                return ApiHelper.HttpGet(url);
+            }
+            return string.Empty;
+        }
 
     }
 }
