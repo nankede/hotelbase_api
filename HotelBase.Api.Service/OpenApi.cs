@@ -61,7 +61,7 @@ namespace HotelBase.Api.Service
             {//正式环境才调用
                 rtn = ApiHelper.HttpGet(url);
             }
-            LogHelper.Info($"OpenApiGet:{url}:{rtn}", "OpenApiGet");
+            //   LogHelper.Info($"OpenApiGet:{url}:{rtn}", "OpenApiGet");
             return rtn;
         }
 
