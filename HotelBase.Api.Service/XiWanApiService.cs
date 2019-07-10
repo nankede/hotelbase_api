@@ -324,7 +324,7 @@ namespace HotelBase.Api.Service
                                 {
                                     var sql = rrDb.Update().Where(rr => rr.Id == oldRule.Id);
                                     sql.Set(rr => rr.HRRXwProductSerial == r.ProductSerial
-                                    && rr.HRRUpdateName == "喜玩更新"
+                                    && rr.HRRUpdateName == "喜玩更新" && rr.HRRIsValid == 1
                                     && rr.HRRUpdateTime == DateTime.Now
                                     ).Execute();
                                 }
@@ -370,11 +370,38 @@ namespace HotelBase.Api.Service
                                             ).Execute();
                                         }
                                         OpenApi.AddRuleInfo(x.Id, oldRoom.Id, p.BreakfastNum, price.Id, p.Status ? 1 : 0);
-
                                     });
                                 }
                             }
                         });
+
+                        var outRoomIds = hotel.Rooms.Select(r => r.RoomTypeId.ToInt()).ToList(); //接口返回的房型Id
+                        var dbRooms = roomDb.Query().Where(rd => rd.HIId == x.Id).ToList();
+                        var errDbRooms = dbRooms.Where(rd => !outRoomIds.Contains(rd.HROutId))?.ToList();
+                        errDbRooms?.ForEach(err =>
+                        {
+                            //更新房型无效
+                            roomDb.Update().Set(rr => rr.HRIsValid == 0)
+                                   .Where(rr => rr.Id == err.Id).Execute();
+
+                            var pDb = new H_HoteRulePriceAccess();
+                            //查询价格Id
+                            var errDbPrice = pDb.Query().Where(pr => pr.HRId == err.Id).ToList();
+                            //更新库存为0
+                            var sql = pDb.Update().Where(pr => pr.HRId == err.Id);
+                            sql.Set(pr => pr.HRPCount == 0
+                            && pr.HRPIsValid == 0
+                            && pr.HRPUpdateName == "喜玩更新"
+                            && pr.HRPUpdateTime == DateTime.Now
+                            ).Execute();
+
+                            //同步价格策略
+                            errDbPrice.ForEach(pr =>
+                            {
+                                OpenApi.AddRuleInfo(x.Id, err.Id, 0, pr.Id, 0);
+                            });
+                        });
+
                         //同步房型
                         OpenApi.AddRoomInfo(x.Id);
                     }
@@ -383,18 +410,37 @@ namespace HotelBase.Api.Service
             return rtn;
         }
 
-        public static XiWanPriceHotel GetHotelPrice(int outId)
+        /// <summary>
+        /// 查询库存报价
+        /// </summary>
+        /// <param name="outId"></param>
+        /// <param name="days"></param>
+        /// <returns></returns>
+        public static XiWanPriceHotel GetHotelPrice(int outId, int days = 7)
+        {
+            return GetHotelPrice(outId, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.AddDays(days).ToString("yyyy-MM-dd"));
+        }
+
+        /// <summary>
+        /// 查询库存报价
+        /// </summary>
+        /// <param name="outId"></param>
+        /// <param name="commeDate"></param>
+        /// <param name="leaveDate"></param>
+        /// <returns></returns>
+        public static XiWanPriceHotel GetHotelPrice(int outId, string commeDate, string leaveDate)
         {
             var request = new XiWanPriceRequest
             {
                 HotelId = outId,
-                ComeDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                LeaveDate = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd"),
+                ComeDate = commeDate,
+                LeaveDate = leaveDate,
             };
             var rtn = XiWanAPI.XiWanPost<XiWanPriceHotel, XiWanPriceRequest>(request, HotelDPriceUrl);
             var hotel = rtn?.Result;
             return hotel;
         }
+
 
         /// <summary>
         /// 

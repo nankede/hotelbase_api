@@ -175,10 +175,9 @@ namespace HotelBase.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public JsonResult<XiWanPriceHotel> GetHotelPrice(int id)
+        public JsonResult<XiWanPriceHotel> GetHotelPrice(int id, DateTime comeDate,DateTime leaveDate)
         {
-            var rtn = XiWanApiService.GetHotelPrice(id);
-
+            var rtn = XiWanApiService.GetHotelPrice(id, comeDate.ToString("yyyy-MM-dd"), leaveDate.ToString("yyyy-MM-dd"));
             return Json(rtn);
         }
 
