@@ -21,6 +21,7 @@ using HotelBase.Api.Entity.CommonModel.Enum;
 using System.Text;
 using HotelBase.Api.DataAccess.Resource;
 using HotelBase.Api.Entity.Models;
+using System.Diagnostics;
 
 namespace HotelBase.Api.Controllers
 {
@@ -88,8 +89,8 @@ namespace HotelBase.Api.Controllers
                             HRRName = hotelinfo.HotelRoomRuleName,
                             HOSupplierId = hotelinfo.HotelSupplierId,
                             HOSupperlierName = hotelinfo.HotelSupplierName,
-                            HODistributorId = createrequset.distributorSourceId,
-                            HODistributorName = createrequset.distributorSource,
+                            HODistributorId = createrequset.distribuorSourceId,
+                            HODistributorName = createrequset.distribuorSource,
                             HOSupplierSourceId = hotelinfo.HotelSupplierSourceId,
                             HOSupplierSourceName = hotelinfo.HotelSupplierSourceName,
                             HODistributorSerialId = item.thirdOrderNo,
@@ -130,13 +131,18 @@ namespace HotelBase.Api.Controllers
                         if (price != null && price.Any())
                         {
                             var total = price.Sum(s => s.HRPContractPrice) * newmodel.HORoomCount;
-                            if (newmodel.HOSellPrice > total)
+                            if (createrequset.supplierSourceId == 1)
+                            {
+                                total = total * 0.97M;
+                            }
+                            if (newmodel.HOSellPrice >= total)
                             {
                                 issned = true;
                                 newmodel.HOContractPrice = total;
                             }
                             else
                             {
+                                issned = false;
                                 newmodel.HOStatus = 2;
                             }
 
@@ -149,6 +155,7 @@ namespace HotelBase.Api.Controllers
                 }
                 if (!string.IsNullOrWhiteSpace(orderseridid) && issned)
                 {
+                    Stopwatch sw1 = new Stopwatch();
                     var order = OrderBll.GetModel(orderseridid);
                     if (order.Id > 0)
                     {
@@ -161,6 +168,7 @@ namespace HotelBase.Api.Controllers
                             EDate = order.HOCheckOutDate
                         };
                         var roomRateList = new List<RateList>();
+                        sw1.Start();
                         var pricelist = HotelPriceBll.GetOrderList(search);
                         if (pricelist != null && pricelist.Any())
                         {
@@ -174,7 +182,8 @@ namespace HotelBase.Api.Controllers
                                 roomRateList.Add(ite);
                             }
                         }
-                        createrequset.supplierSourceId = 2;
+                        sw1.Stop();
+                        LogHelper.Info("查询订单和价格耗时：" + sw1.ElapsedMilliseconds);
                         createrequset.orderModel = new OrderModel
                         {
                             hotelId = Convert.ToInt32(order.OutHotelId),
@@ -192,7 +201,9 @@ namespace HotelBase.Api.Controllers
                             subSource = 0,
                             roomRateTypeId = 28,
                             thirdOrderNo = order.HODistributorSerialId,
-                            //basePrice = order.HOContractPrice.ToString(),
+                            basePrice = "",
+                            couponsList = "",
+                            remark = order.HORemark,
                             roomPrice = order.HOContractPrice.ToString(),
                             productSerial = order.OutProductSerial,
                             outCode = order.OutRoomCode
@@ -251,6 +262,8 @@ namespace HotelBase.Api.Controllers
             }
             dic.Remove("basePrice");
             dic.Remove("roomPrice");
+            dic.Remove("productSerial");
+            dic.Remove("outCode");
             var sign = AtourSignUtil.GetSignUtil(dic);
             var orderrequest = new OrderRequest
             {
@@ -285,6 +298,19 @@ namespace HotelBase.Api.Controllers
                 j++;
             }
             var orderresponse = ApiHelper.HttpPost(url, parm.ToString(), "application/x-www-form-urlencoded");
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
+            {
+                HOLOrderId = orderseridid,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now
+            };
+            logmodel.HOLRemark = "亚朵下单请求：" + url + "||parm:" + parm.ToString() + "|| 接口返回：" + orderresponse;
+            OrderLogBll.AddOrderModel(logmodel);
             if (!string.IsNullOrWhiteSpace(orderresponse))
             {
                 var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
@@ -293,7 +319,7 @@ namespace HotelBase.Api.Controllers
                     var serialid = data["msg"]["atourOrderNo"].ToString();
 
                     result.Code = DataResultType.Sucess;
-                    result.Data = Encrypt.DESEncrypt(serialid);
+                    result.Data = orderseridid;
                     OrderBll.UpdatesSupplier(orderseridid, serialid, 0);
                 }
                 else
@@ -374,7 +400,7 @@ namespace HotelBase.Api.Controllers
             }
             else
             {
-                if (rtn.Msg.Contains("存在日期满房") || rtn.Msg.Contains("总价应为"))
+                if (rtn.Msg.Contains("存在日期满房") || rtn.Msg.Contains("总价应为") || rtn.Msg.Contains("已关闭"))
                 {
                     var upstock = XiWanApiService.Xw_HotelPrice(qlhotelid);
                     logmodel.HOLRemark = "满房或价格变动更新酒店库存和价格：酒店id：" + qlhotelid + "，更新结果：" + upstock.Code;
@@ -399,10 +425,23 @@ namespace HotelBase.Api.Controllers
                         {
                             var total = price.Sum(s => s.HRPContractPrice) * neworder.HORoomCount;
                             createrequset.orderModel.roomPrice = total.ToString();
-                            XiWanOrder(createrequset, orderseriald, ruleid, qlhotelid);
+                            if (createrequset.supplierSourceId == 1)
+                            {
+                                total = total * 0.97M;
+                            }
+                            if (neworder.HOSellPrice >= total)
+                            {
+                                XiWanOrder(createrequset, orderseriald, ruleid, qlhotelid);
+                            }
+
                         }
                     }
-
+                    if (rtn.Msg.Contains("已关闭"))
+                    {
+                        var up = HotelBll.SetValid(qlhotelid, 0, "system");
+                        logmodel.HOLRemark = "已关闭更新酒店状态：待更新酒店Id：" + qlhotelid + "，更新结果：" + up.IsSuccess;
+                        OrderLogBll.AddOrderModel(logmodel);
+                    }
                 }
                 result.Code = DataResultType.Fail;
                 result.Message = JsonConvert.SerializeObject(rtn);
@@ -507,7 +546,7 @@ namespace HotelBase.Api.Controllers
                 };
                 OrderLogBll.AddOrderModel(logmodel);
             }
-            
+
             try
             {
                 if (searchtype == 1)

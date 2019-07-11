@@ -97,12 +97,12 @@ namespace HotelBase.Api.Entity.Request.Order
         /// <summary>
         /// 分销商来源
         /// </summary>
-        public int distributorSourceId { get; set; }
+        public int distribuorSourceId { get; set; }
 
         /// <summary>
         /// 分销商来源
         /// </summary>
-        public string distributorSource { get; set; }
+        public string distribuorSource { get; set; }
 
         public OrderModel orderModel { get; set; }
     }
