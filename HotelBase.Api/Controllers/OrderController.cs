@@ -131,21 +131,23 @@ namespace HotelBase.Api.Controllers
                         if (price != null && price.Any())
                         {
                             var total = price.Sum(s => s.HRPContractPrice) * newmodel.HORoomCount;
-                            if (createrequset.supplierSourceId == 1)
+                            if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)
                             {
-                                total = total * 0.97M;
+                                if (createrequset.supplierSourceId == 1)
+                                {
+                                    total = total * 0.97M;
+                                }
+                                if (newmodel.HOSellPrice >= total)
+                                {
+                                    issned = true;
+                                    newmodel.HOContractPrice = total;
+                                }
+                                else
+                                {
+                                    issned = false;
+                                    newmodel.HOStatus = 2;
+                                }
                             }
-                            if (newmodel.HOSellPrice >= total)
-                            {
-                                issned = true;
-                                newmodel.HOContractPrice = total;
-                            }
-                            else
-                            {
-                                issned = false;
-                                newmodel.HOStatus = 2;
-                            }
-
                         }
                         OrderLogBll.AddOrderModel(logmodel);
                         var response = OrderBll.AddOrderModel(newmodel);
