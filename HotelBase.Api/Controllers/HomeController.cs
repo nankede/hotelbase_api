@@ -202,7 +202,17 @@ namespace HotelBase.Api.Controllers
 
         //
 
+        /// <summary>
+        /// 删除历史数据
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public JsonResult<string> DeleteOldPrice(int days)
+        {
+            var rtn = XiWanApiService.DeleteOldPrice(days);
 
+            return Json(rtn);
+        }
         #endregion
     }
 }
