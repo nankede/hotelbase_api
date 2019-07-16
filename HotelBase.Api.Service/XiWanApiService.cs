@@ -406,6 +406,13 @@ namespace HotelBase.Api.Service
                         OpenApi.AddRoomInfo(x.Id);
                     }
                 }
+                else
+                {//查询不到酒店信息无效
+                    hDb.Update().Where(h => h.Id == x.Id)
+                       .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩酒店无信息更新" && h.HIUpdateTime == DateTime.Now)
+                       .Execute();
+                    rtn.Message += $"[无效]";
+                }
             });
             return rtn;
         }
@@ -521,6 +528,20 @@ namespace HotelBase.Api.Service
             }
 
             return size;
+        }
+
+
+        /// <summary>
+        /// 清理价格
+        /// </summary>
+        public static string DeleteOldPrice(int days)
+        {
+            days = days >= 0 ? -3 : days;//不允许大于0
+            var db = new H_HoteRulePriceAccess();
+            var count = db.Delete().Where(x => x.HRPDate <= DateTime.Now.AddDays(days).Date).Top(10000).Execute();
+            var msg = $"删除{days}天前的数据{count}条";
+            LogHelper.Info(msg, "清理");
+            return msg;
         }
 
     }
