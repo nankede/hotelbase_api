@@ -539,8 +539,10 @@ namespace HotelBase.Api.DataAccess.Order
                     qulangstatus = 1;
                     break;
                 case 2:
-                case 5:
                     qulangstatus = 3;
+                    break;
+                case 5:
+                    qulangstatus = 2;
                     break;
             }
             sql.AppendFormat(" UPDATE `ho_hotelorder` SET HOStatus='{0}'  WHERE HOCustomerSerialId='{1}'", qulangstatus, orderserialid);

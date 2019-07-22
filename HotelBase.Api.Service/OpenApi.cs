@@ -53,6 +53,18 @@ namespace HotelBase.Api.Service
             return OpenApiGet(url);
         }
 
+        /// <summary>
+        /// 同步订单状态
+        /// </summary>
+        /// <param name="hotelId"></param>
+        /// <returns></returns>
+        public static string HotelOrderStatus(string serialId,int optType)
+        {
+            var url = $"http://openapi.lyqllx.com/order/update?serialId={serialId}&optType={optType}&distributor=2";
+
+            return OpenApiGet(url);
+        }
+
         public static string OpenApiGet(string url)
         {
             var rtn = string.Empty;

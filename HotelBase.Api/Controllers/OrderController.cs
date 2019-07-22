@@ -217,7 +217,7 @@ namespace HotelBase.Api.Controllers
                     switch (createrequset.supplierSourceId)
                     {
                         case 1:
-                            result = AtourOrder(createrequset, orderseridid, ruleid);
+                            result = AtourOrder(createrequset, orderseridid, ruleid, qlhotelid);
                             break;
                         case 2:
                             result = XiWanOrder(createrequset, orderseridid, ruleid, qlhotelid);
@@ -244,8 +244,9 @@ namespace HotelBase.Api.Controllers
         /// <param name="createrequset"></param>
         /// <param name="orderseridid"></param>
         /// <param name="ruleid"></param>
+        /// <param name="qlhotelid"></param>
         /// <returns></returns>
-        public DataResult AtourOrder(CreateRequset createrequset, string orderseridid, int ruleid)
+        public DataResult AtourOrder(CreateRequset createrequset, string orderseridid, int ruleid, int qlhotelid)
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
@@ -321,16 +322,70 @@ namespace HotelBase.Api.Controllers
             if (!string.IsNullOrWhiteSpace(orderresponse))
             {
                 var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
+                var price = OrderBll.GetHotelPriceList(ruleid, Convert.ToDateTime(item.arrival), Convert.ToDateTime(item.departure));
                 if (data["msg"].ToString().ToLower() == "success")
                 {
                     var serialid = data["msg"]["atourOrderNo"].ToString();
 
                     result.Code = DataResultType.Sucess;
                     result.Data = orderseridid;
-                    OrderBll.UpdatesSupplier(orderseridid, serialid, 0);
+                    logmodel.HOLRemark = "亚朵更新供应商订单流水号：流水号=" + serialid;
+                    var upserialid = OrderBll.UpdatesSupplier(orderseridid, serialid, 0);
+                    logmodel.HOLRemark = "更新结果：" + (upserialid > 0 ? "更新成功" : "更新失败");
+                    OrderLogBll.AddOrderModel(logmodel);
+                    if (price != null && price.Any())
+                    {
+                        foreach (var i in price)
+                        {
+                            logmodel.HOLRemark = "亚朵更新库存：原有库存=" + i.HRPCount;
+                            i.HRPCount = i.HRPCount - 1 >= 0 ? i.HRPCount - 1 : 0;
+                            var up = HotelRoomRuleBll.UpdateCount(i);
+                            logmodel.HOLRemark += "，更新后库存=" + i.HRPCount + "，更新结果：" + up.Msg;
+                            OrderLogBll.AddOrderModel(logmodel);
+                        }
+                    }
+                    //下单成功通知
+                    OpenApi.HotelOrderStatus(orderseridid, 2);
                 }
                 else
                 {
+                    if (data["level"].ToString() == "80034")//满房
+                    {
+                        var upstock = YaDuoApiService.GetRoomRate(item.hotelId, Convert.ToDateTime(item.arrival), 100000);
+                        logmodel.HOLRemark = "满房更新酒店库存和价格：酒店id：" + qlhotelid + "，更新结果：" + upstock.Code;
+                        OrderLogBll.AddOrderModel(logmodel);
+                        if (price != null && price.Any())
+                        {
+                            var i = price.OrderBy(s => s.HRPDate).FirstOrDefault();
+                            i.HRPCount = 0;
+                            var up = HotelRoomRuleBll.UpdateCount(i);
+                            logmodel.HOLRemark = "满房更新库存：待更新信息：" + JsonConvert.SerializeObject(i) + "，更新结果：" + up.IsSuccess;
+                            OrderLogBll.AddOrderModel(logmodel);
+                        }
+                        //满房通知
+                        OpenApi.HotelOrderStatus(orderseridid, 1);
+                    }
+                    if (data["level"].ToString() == "1006")//报价不存在或者不可订
+                    {
+                        if (data["msg"].ToString().Contains("报价不可订"))
+                        {
+                            var neworder = OrderBll.GetModel(orderseridid);
+                            var newprice = OrderBll.GetHotelPriceList(neworder.HRRId, neworder.HOCheckInDate, neworder.HOCheckOutDate);
+                            if (price != null && price.Any())
+                            {
+                                var total = price.Sum(s => s.HRPContractPrice) * neworder.HORoomCount;
+                                createrequset.orderModel.roomPrice = total.ToString();
+                                if (createrequset.supplierSourceId == 1)
+                                {
+                                    total = total * 0.97M;
+                                }
+                                if (neworder.HOSellPrice >= total)
+                                {
+                                    AtourOrder(createrequset, orderseridid, ruleid, qlhotelid);
+                                }
+                            }
+                        }
+                    }
                     result.Code = DataResultType.Fail;
                     result.Message = data["msg"].ToString();
                     OrderBll.UpdatesSupplier(orderseridid, "", 2);
@@ -599,16 +654,14 @@ namespace HotelBase.Api.Controllers
         public DataResult AtourCancelOrder(string orderid)
         {
             var result = new DataResult();
-            //解密
-            var escorderid = Encrypt.DESDecrypt(orderid);
             Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("atourOrderNo", escorderid);
+            dic.Add("atourOrderNo", orderid);
             dic.Add("appId", AtourAuth_APPID);
             var sign = AtourSignUtil.GetSignUtil(dic);
             var url = AtourAuth_URL + "baoku/order/cancelOrder";
             var orderrequest = new
             {
-                atourOrderNo = escorderid,
+                atourOrderNo = orderid,
                 appId = AtourAuth_APPID,
                 sign = sign
             };
@@ -620,6 +673,7 @@ namespace HotelBase.Api.Controllers
                 {
                     result.Code = DataResultType.Sucess;
                     OrderBll.UpdatesSataus(orderid, 6);
+                    OpenApi.HotelOrderStatus(orderid, 5);//noshow
                 }
                 else
                 {
@@ -677,6 +731,17 @@ namespace HotelBase.Api.Controllers
         {
             var result = new DataResult();
             var ordermodel = OrderBll.GetModel(orderid);
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
+            {
+                HOLOrderId = orderid,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now
+            };
             if (ordermodel.Id > 0)
             {
                 Dictionary<string, string> dic = new Dictionary<string, string>();
@@ -699,11 +764,52 @@ namespace HotelBase.Api.Controllers
                     if (data["msg"].ToString().ToLower() == "success")
                     {
                         result.Code = DataResultType.Sucess;
-                        OrderBll.UpdateAutorSataus(orderid, data["result"]["status"].ToString());
+                        var oldstatus = GetStatus(ordermodel.HOStatus);
+                        var up = OrderBll.UpdateAutorSataus(orderid, data["result"]["status"].ToString());
+                        var neworder = OrderBll.GetModel(orderid);
+                        var newstatus = GetStatus(neworder.HOStatus);
+                        if (oldstatus != newstatus)
+                        {
+                            logmodel.HOLRemark = "亚朵查询订单接口返回：" + JsonConvert.SerializeObject(orderresponse);
+                            OrderLogBll.AddOrderModel(logmodel);
+                            logmodel.HOLRemark = "亚朵订单更新：亚朵返回订单状态" + data["result"]["status"].ToString() + "(1-预定 2-取消 3-夜审取消（即noshow） 4-入住 5-离店)" + "我方订单状态：" + oldstatus;
+                            OrderLogBll.AddOrderModel(logmodel);
+                            logmodel.HOLRemark = "我方订单更新：更新结果=" + (up > 0 ? "更新成功" : "更新失败") + "当前订单状态：" + newstatus;
+                            OrderLogBll.AddOrderModel(logmodel);
+                            //状态通知
+                            int status = 0;
+                            switch (data["result"]["status"].ToString())
+                            {
+                                case "1":
+                                    status = 2;
+                                    break;
+                                case "2":
+                                    status = 6;
+                                    break;
+                                case "3":
+                                    status = 5;
+                                    break;
+                                case "4":
+                                    status = 3;
+                                    break;
+                                case "5":
+                                    status = 4;
+                                    break;
+                            }
+                            if (status > 0)
+                            {
+                                OpenApi.HotelOrderStatus(orderid, status);
+                            }
+
+                        }
+
                     }
                     else
                     {
                         result.Code = DataResultType.Fail;
+                        result.Message = data["msg"].ToString();
+                        logmodel.HOLRemark = "亚朵订单更新：接口返回失败，失败原因:" + data["msg"].ToString();
+                        OrderLogBll.AddOrderModel(logmodel);
                     }
                 }
             }
