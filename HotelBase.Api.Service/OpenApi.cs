@@ -24,6 +24,24 @@ namespace HotelBase.Api.Service
             var url = $"http://openapi.lyqllx.com/HotelData/AddNewInfo?hotelId={hotelId}";
             return OpenApiGet(url);
         }
+
+        /// <summary>
+        /// 酒店上下
+        /// </summary>
+        /// <param name="hotelId"></param>
+        /// <returns></returns>
+        public static string HotelOffline(int hotelId, int status)
+        {
+            var url = $"http://openapi.lyqllx.com/HotelData/HotelOffline?hotelId={hotelId}&status={status}";
+            var rtn = OpenApiGet(url);
+            if (status == 0)
+            {
+                LogHelper.Info($"HotelOffline:{url}\r\n {rtn}", "OpenApiGet");
+            }
+            return rtn;
+        }
+
+
         /// <summary>
         /// 增量同步酒店
         /// </summary>

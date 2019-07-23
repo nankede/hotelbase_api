@@ -106,7 +106,8 @@ namespace HotelBase.Api.Service
                         };
                         var id = (int)hDb.Add(model);
                         //增量同步
-                        OpenApi.SysInfo(id);
+                        //OpenApi.SysInfo(id);
+                        OpenApi.HotelOffline(id, 1);
                     });
                     //if (addList != null && addList.Count > 0)
                     //{
@@ -239,6 +240,7 @@ namespace HotelBase.Api.Service
                         hDb.Update().Where(h => h.Id == x.Id)
                         .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩无房型更新" && h.HIUpdateTime == DateTime.Now)
                         .Execute();
+                        OpenApi.HotelOffline(x.Id, 0);
                         rtn.Message += $"[无效]";
                     }
                     else
@@ -248,6 +250,7 @@ namespace HotelBase.Api.Service
                             hDb.Update().Where(h => h.Id == x.Id)
                            .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "喜玩更新酒店有效" && h.HIUpdateTime == DateTime.Now)
                            .Execute();
+                            OpenApi.HotelOffline(x.Id, 1);
                             rtn.Message += $"[有效]";
                         }
                         hotel?.Rooms.ForEach(r =>
@@ -412,6 +415,7 @@ namespace HotelBase.Api.Service
                     hDb.Update().Where(h => h.Id == x.Id)
                        .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩酒店无信息更新" && h.HIUpdateTime == DateTime.Now)
                        .Execute();
+                    OpenApi.HotelOffline(x.Id, 0);
                     rtn.Message += $"[无效]";
                 }
             });

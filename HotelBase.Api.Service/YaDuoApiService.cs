@@ -92,7 +92,8 @@ namespace HotelBase.Api.Service
                                  HIGdLonLat = $"{x.longitude},{x.latitude}"
                              };
                              id = (int)(hDb.Add(model));
-                             OpenApi.SysInfo(id);
+                             //OpenApi.SysInfo(id);
+                             OpenApi.HotelOffline(id, 1);
                          }
                          else
                          {//更新
@@ -233,6 +234,7 @@ namespace HotelBase.Api.Service
                         hDb.Update().Where(h => h.Id == x.Id)
                            .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "亚朵更新有效" && h.HIUpdateTime == DateTime.Now)
                            .Execute();
+                        OpenApi.HotelOffline(x.Id, 1);
                     }
 
                     var listId = list.Select(l => l.roomTypeId).ToList();
@@ -286,6 +288,7 @@ namespace HotelBase.Api.Service
                     hDb.Update().Where(h => h.Id == x.Id)
                     .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "亚朵无房型更新" && h.HIUpdateTime == DateTime.Now)
                     .Execute();
+                    OpenApi.HotelOffline(x.Id, 0);
                     result.Message = rtn?.msg ?? "系统异常";
                 }
                 //查询最近三天的价格和库存
