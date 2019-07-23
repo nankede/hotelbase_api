@@ -92,7 +92,7 @@ namespace HotelBase.Api.Service
                                  HIGdLonLat = $"{x.longitude},{x.latitude}"
                              };
                              id = (int)(hDb.Add(model));
-                             OpenApi.AddHotelInfo(id);
+                             OpenApi.SysInfo(id);
                          }
                          else
                          {//更新
@@ -465,6 +465,7 @@ namespace HotelBase.Api.Service
                             }
 
                             OpenApi.AddRuleInfo(hotel.Id, x.Id, 0, price.Id, 1);
+                            OpenApi.SysInfo(x.Id);
 
                         }
                     });

@@ -106,7 +106,7 @@ namespace HotelBase.Api.Service
                         };
                         var id = (int)hDb.Add(model);
                         //增量同步
-                        OpenApi.AddHotelInfo(id);
+                        OpenApi.SysInfo(id);
                     });
                     //if (addList != null && addList.Count > 0)
                     //{
@@ -370,6 +370,7 @@ namespace HotelBase.Api.Service
                                             ).Execute();
                                         }
                                         OpenApi.AddRuleInfo(x.Id, oldRoom.Id, p.BreakfastNum, price.Id, p.Status ? 1 : 0);
+                                        OpenApi.SysInfo(x.Id);
                                     });
                                 }
                             }

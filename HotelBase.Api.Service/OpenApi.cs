@@ -29,7 +29,7 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="hotelId"></param>
         /// <returns></returns>
-        public static string AddHotelInfo(int hotelId)
+        public static string SysInfo(int hotelId)
         {
             var url = $"http://openapi.lyqllx.com/HotelData/SysInfo?hotelId={hotelId}";
 
@@ -58,7 +58,7 @@ namespace HotelBase.Api.Service
         /// </summary>
         /// <param name="hotelId"></param>
         /// <returns></returns>
-        public static string HotelOrderStatus(string serialId,int optType)
+        public static string HotelOrderStatus(string serialId, int optType)
         {
             var url = $"http://openapi.lyqllx.com/order/update?serialId={serialId}&optType={optType}&distributor=2";
 
@@ -73,7 +73,10 @@ namespace HotelBase.Api.Service
             {//正式环境才调用
                 rtn = ApiHelper.HttpGet(url);
             }
-            //   LogHelper.Info($"OpenApiGet:{url}:{rtn}", "OpenApiGet");
+            if (url.Contains("6986"))
+            {
+                LogHelper.Info($"OpenApiGet:{url}\r\n {rtn}", "OpenApiGet");
+            }
             return rtn;
         }
 
