@@ -586,7 +586,7 @@ namespace HotelBase.Api.Controllers
         /// des加密，key单独提供
         /// </remarks>
         /// <param name="searchtype">1:查询订单 2：取消订单</param>
-        /// <param name="orderid">加密过的orderid</param>
+        /// <param name="orderid">orderid</param>
         /// <param name="type">1 亚朵 2 致和</param>
         /// <returns></returns>
         public DataResult OperatAtourOrder(int searchtype, string orderid, int type)
@@ -604,7 +604,7 @@ namespace HotelBase.Api.Controllers
                     HOLAddDepartId = 0,
                     HOLAddDepartName = "系统",
                     HOLAddTime = DateTime.Now,
-                    HOLRemark = "操作订单请求：searchtype" + searchtype + "&orderid=" + orderid + "&type=" + type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和}"
+                    HOLRemark = "操作订单请求：searchtype" + searchtype + "&orderid=" + orderid + "&type=" + type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和 3:直采}"
                 };
                 OrderLogBll.AddOrderModel(logmodel);
             }
@@ -632,6 +632,9 @@ namespace HotelBase.Api.Controllers
                             break;
                         case 2:
                             result = XiWanCancelOrder(orderid);
+                            break;
+                        case 3:
+                            result = OrderCancel(orderid);
                             break;
                     }
                 }
@@ -710,6 +713,42 @@ namespace HotelBase.Api.Controllers
             {
                 result.Code = DataResultType.Sucess;
                 OrderBll.UpdatesSataus(orderid, 6);
+            }
+            else
+            {
+                result.Code = DataResultType.Fail;
+                result.Message = rtn?.Msg;
+            }
+            return result;
+        }
+
+
+        /// <summary>
+        /// 直采订单取消
+        /// </summary>
+        /// <param name="orderid"></param>
+        /// <returns></returns>
+        public DataResult OrderCancel(string orderid)
+        {
+            var result = new DataResult();
+            var orderquery = new XiWanOrderQueryRequest { OrderNo = orderid };
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
+            {
+                HOLOrderId = orderid,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLRemark="直采订单取消",
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now,
+            };
+            OrderLogBll.AddOrderModel(logmodel);
+            var rtn = OrderBll.SetOrder(orderid,3);
+            if (rtn.IsSuccess == 1)
+            {
+                result.Code = DataResultType.Sucess;
             }
             else
             {
@@ -798,7 +837,9 @@ namespace HotelBase.Api.Controllers
                             }
                             if (status > 0)
                             {
-                                OpenApi.HotelOrderStatus(orderid, status);
+                                var api = OpenApi.HotelOrderStatus(orderid, status);
+                                logmodel.HOLRemark = "状态更改通知飞猪：请求参数{id=" + orderid + ",状态：" + status + "}；返回结果：" + api;
+                                OrderLogBll.AddOrderModel(logmodel);
                             }
 
                         }

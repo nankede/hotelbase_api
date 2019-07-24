@@ -141,6 +141,24 @@ namespace HotelBase.Api.Service
             return res;
         }
 
+        /// <summary>
+        /// 更新订单
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="valid"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static BaseResponse SetOrder(string id,int state)
+        {
+            var i = Ho_HotelOrderAccess.UpdateOrderSerialid(id, state);
+            var res = new BaseResponse
+            {
+                IsSuccess = i > 0 ? 1 : 0,
+                Msg = i > 0 ? string.Empty : "更新失败",
+            };
+            return res;
+        }
+
 
         /// <summary>
         /// 更新订单
