@@ -478,7 +478,7 @@ namespace HotelBase.Api.DataAccess.Order
             {
                 sql.AppendFormat(" `HOStatus` = {0}  ", state);
             }
-            sql.AppendFormat(" WHERE  `HOSupplierSerialId` = {0}  Limit 1;  ",orderid);
+            sql.AppendFormat(" WHERE  `HOSupplierSerialId` = '{0}'  Limit 1;  ",orderid);
             var c = MysqlHelper.Update(sql.ToString());
             return c;
         }

@@ -107,6 +107,16 @@ namespace HotelBase.Api.Entity.Request.Order
         public OrderModel orderModel { get; set; }
     }
 
+
+    public class SearchRequest
+    {
+        public int searchtype { get; set; }
+
+        public string orderid { get; set; }
+
+        public int type { get; set; }
+    }
+
     /// <summary>
     /// 亚朵订单列表
     /// </summary>

@@ -583,58 +583,58 @@ namespace HotelBase.Api.Controllers
         /// 操作订单
         /// </summary>
         /// <remarks>
-        /// des加密，key单独提供
+        /// searchtype 1:查询订单 2：取消订单
+        /// orderid  orderid
+        /// type 1 亚朵 2 致和
         /// </remarks>
-        /// <param name="searchtype">1:查询订单 2：取消订单</param>
-        /// <param name="orderid">orderid</param>
-        /// <param name="type">1 亚朵 2 致和</param>
+        /// <param name="search">
         /// <returns></returns>
-        public DataResult OperatAtourOrder(int searchtype, string orderid, int type)
+        public DataResult OperatAtourOrder(SearchRequest search)
         {
             var result = new DataResult();
-            if (searchtype == 2)
+            if (search.searchtype == 2)
             {
                 //日志
                 var logmodel = new HO_HotelOrderLogModel
                 {
-                    HOLOrderId = orderid,
+                    HOLOrderId = search.orderid,
                     HOLLogType = 1,//订单日志
                     HOLAddId = 0,
                     HOLAddName = "系统",
                     HOLAddDepartId = 0,
                     HOLAddDepartName = "系统",
                     HOLAddTime = DateTime.Now,
-                    HOLRemark = "操作订单请求：searchtype" + searchtype + "&orderid=" + orderid + "&type=" + type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和 3:直采}"
+                    HOLRemark = "操作订单请求：searchtype" + search.searchtype + "&orderid=" + search.orderid + "&type=" + search.type + "参数说明{searchtype：1:查询订单 2：取消订单，orderid：订单号，type:1 亚朵 2 致和 3:直采}"
                 };
                 OrderLogBll.AddOrderModel(logmodel);
             }
 
             try
             {
-                if (searchtype == 1)
+                if (search.searchtype == 1)
                 {
-                    switch (type)
+                    switch (search.type)
                     {
                         case 1:
-                            result = AtourSearchOrder(orderid);
+                            result = AtourSearchOrder(search.orderid);
                             break;
                         case 2:
-                            result = XiWanSearchOrder(orderid);
+                            result = XiWanSearchOrder(search.orderid);
                             break;
                     }
                 }
                 else
                 {
-                    switch (type)
+                    switch (search.type)
                     {
                         case 1:
-                            result = AtourCancelOrder(orderid);
+                            result = AtourCancelOrder(search.orderid);
                             break;
                         case 2:
-                            result = XiWanCancelOrder(orderid);
+                            result = XiWanCancelOrder(search.orderid);
                             break;
-                        case 3:
-                            result = OrderCancel(orderid);
+                        default:
+                            result = OrderCancel(search.orderid);
                             break;
                     }
                 }
