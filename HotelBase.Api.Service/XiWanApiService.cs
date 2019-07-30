@@ -382,6 +382,10 @@ namespace HotelBase.Api.Service
                         var outRoomIds = hotel.Rooms.Select(r => r.RoomTypeId.ToInt()).ToList(); //接口返回的房型Id
                         var dbRooms = roomDb.Query().Where(rd => rd.HIId == x.Id).ToList();
                         var errDbRooms = dbRooms.Where(rd => !outRoomIds.Contains(rd.HROutId))?.ToList();
+                        if (errDbRooms != null && errDbRooms.Any())
+                        {
+                            LogHelper.Info("待无效房型id:" + JsonHelper.ToJson(errDbRooms) + "|| 更新时间：" + DateTime.Now.ToString(), "喜玩更新无效房型");
+                        }
                         errDbRooms?.ForEach(err =>
                         {
                             //更新房型无效
