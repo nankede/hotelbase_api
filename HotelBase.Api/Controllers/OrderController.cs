@@ -738,14 +738,14 @@ namespace HotelBase.Api.Controllers
                 HOLOrderId = orderid,
                 HOLLogType = 1,//订单日志
                 HOLAddId = 0,
-                HOLRemark="直采订单取消",
+                HOLRemark = "直采订单取消",
                 HOLAddName = "系统",
                 HOLAddDepartId = 0,
                 HOLAddDepartName = "系统",
                 HOLAddTime = DateTime.Now,
             };
             OrderLogBll.AddOrderModel(logmodel);
-            var rtn = OrderBll.SetOrder(orderid,3);
+            var rtn = OrderBll.SetOrder(orderid, 3);
             if (rtn.IsSuccess == 1)
             {
                 result.Code = DataResultType.Sucess;
@@ -781,7 +781,7 @@ namespace HotelBase.Api.Controllers
                 HOLAddDepartName = "系统",
                 HOLAddTime = DateTime.Now
             };
-            if (ordermodel.Id > 0)
+            if (ordermodel.Id > 0 && !string.IsNullOrWhiteSpace(ordermodel.HOSupplierSerialId))
             {
                 Dictionary<string, string> dic = new Dictionary<string, string>();
                 dic.Add("orderNo", orderid);
