@@ -477,6 +477,9 @@ namespace HotelBase.Api.Controllers
                             logmodel.HOLRemark = "满房更新库存：待更新信息：" + JsonConvert.SerializeObject(i) + "，更新结果：" + up.IsSuccess;
                             OrderLogBll.AddOrderModel(logmodel);
                         }
+                        result.Code = DataResultType.Fail;
+                        result.Message = JsonConvert.SerializeObject(rtn);
+                        OrderBll.UpdatesSupplier(orderseriald, "", 2);
 
                     }
                     if (rtn.Msg.Contains("总价应为"))
@@ -495,6 +498,12 @@ namespace HotelBase.Api.Controllers
                             {
                                 XiWanOrder(createrequset, orderseriald, ruleid, qlhotelid);
                             }
+                            else
+                            {
+                                result.Code = DataResultType.Fail;
+                                result.Message = JsonConvert.SerializeObject(rtn);
+                                OrderBll.UpdatesSupplier(orderseriald, "", 2);
+                            }
 
                         }
                     }
@@ -503,11 +512,12 @@ namespace HotelBase.Api.Controllers
                         var up = HotelBll.SetValid(qlhotelid, 0, "system");
                         logmodel.HOLRemark = "已关闭更新酒店状态：待更新酒店Id：" + qlhotelid + "，更新结果：" + up.IsSuccess;
                         OrderLogBll.AddOrderModel(logmodel);
+                        result.Code = DataResultType.Fail;
+                        result.Message = JsonConvert.SerializeObject(rtn);
+                        OrderBll.UpdatesSupplier(orderseriald, "", 2);
                     }
                 }
-                result.Code = DataResultType.Fail;
-                result.Message = JsonConvert.SerializeObject(rtn);
-                OrderBll.UpdatesSupplier(orderseriald, "", 2);
+                
             }
             return result;
         }
