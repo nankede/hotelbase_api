@@ -201,7 +201,7 @@ namespace HotelBase.Api.Controllers
                             guestName = order.HOCustomerName,
                             source = 0,
                             subSource = 0,
-                            roomRateTypeId = 28,
+                            roomRateTypeId = 41,
                             thirdOrderNo = order.HODistributorSerialId,
                             basePrice = "",
                             couponsList = "",
