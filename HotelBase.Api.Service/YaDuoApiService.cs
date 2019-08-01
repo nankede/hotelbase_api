@@ -21,12 +21,14 @@ namespace HotelBase.Api.Service
     /// </summary>
     public class YaDuoApiService
     {
+        private static H_ResourceLogAccess logDb = new H_ResourceLogAccess();
         /// <summary>
         /// 获取酒店列表
         /// </summary>
         /// <returns></returns>
         public static DataResult GetHotelList(int maxId, int top)
         {
+
             var result = new DataResult()
             {
                 Data = $"{maxId + top};"
@@ -94,6 +96,8 @@ namespace HotelBase.Api.Service
                              id = (int)(hDb.Add(model));
                              //OpenApi.SysInfo(id);
                              OpenApi.HotelOffline(id, 1);
+                             logDb.AddLog(id, $"亚朵新增酒店:{x.hotelId}:{x.name}", ResourceLogType.HotelAdd);
+
                          }
                          else
                          {//更新
@@ -182,6 +186,7 @@ namespace HotelBase.Api.Service
                     && h.HIUpdateName == "亚朵数据更新"
                     && h.HIUpdateTime == DateTime.Now
                     ).Where(h => h.Id == x.Id).Execute();
+                    logDb.AddLog(x.Id, $"亚朵更新酒店:{hotel.hotelId}:{hotel.name}", ResourceLogType.HotelUpdate);
 
                     //更新图片
                     PidInit(hotel, x.Id);
@@ -235,6 +240,8 @@ namespace HotelBase.Api.Service
                            .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "亚朵更新有效" && h.HIUpdateTime == DateTime.Now)
                            .Execute();
                         OpenApi.HotelOffline(x.Id, 1);
+                        logDb.AddLog(x.Id, $"亚朵更新有效:{x.HIOutId}:{x.HIName}", ResourceLogType.HotelUpdate);
+
                     }
 
                     var listId = list.Select(l => l.roomTypeId).ToList();
@@ -266,6 +273,7 @@ namespace HotelBase.Api.Service
                                 HRUpdateTime = DateTime.Now,
                                 HRWindowsType = 0
                             });
+                            logDb.AddLog(x.Id, $"亚朵新增房型:{x.HIOutId}:{x.HIName};{l.roomTypeId}", ResourceLogType.RoomAdd);
                         }
                         else
                         {
@@ -275,6 +283,7 @@ namespace HotelBase.Api.Service
                                 .Set(rr => rr.HRBedSize == GetBedSize(l.bedRemark, l.roomTypeName ?? string.Empty))
                                 .Set(rr => rr.HRUpdateTime == DateTime.Now)
                                 .Where(rr => rr.Id == baseRoom.Id).Execute();
+                                logDb.AddLog(x.Id, $"亚朵更新房型床型:{x.HIOutId}:{x.HIName};{l.roomTypeId}", ResourceLogType.RoomUpdate);
                             }
 
                         }
@@ -290,9 +299,10 @@ namespace HotelBase.Api.Service
                     .Execute();
                     OpenApi.HotelOffline(x.Id, 0);
                     result.Message = rtn?.msg ?? "系统异常";
+                    logDb.AddLog(x.Id, $"亚朵无房型更新:{x.HIOutId}:{x.HIName}", ResourceLogType.HotelDelete);
                 }
                 //查询最近三天的价格和库存
-                var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 3);
+                var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 7);
                 result.Data += rrRtn.Data?.ToString() ?? string.Empty;
             });
 
@@ -419,6 +429,7 @@ namespace HotelBase.Api.Service
                                 HRRUpdateTime = DateTime.Now
                             };
                             oldRule.Id = (int)rrDb.Add(oldRule);
+                            logDb.AddLog(hotel.Id, $"亚朵新增策略:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}", ResourceLogType.RuleAdd);
                         }
                         //else
                         //{
@@ -452,6 +463,7 @@ namespace HotelBase.Api.Service
                                     HRRId = oldRule.Id
                                 };
                                 price.Id = (int)pDb.Add(price);
+                                logDb.AddLog(hotel.Id, $"亚朵新增价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}", ResourceLogType.PriceAdd);
                             }
                             else
                             {
@@ -465,6 +477,7 @@ namespace HotelBase.Api.Service
                                 && pr.HRPUpdateName == "亚朵更新"
                                 && pr.HRPUpdateTime == DateTime.Now
                                 ).Execute();
+                                logDb.AddLog(hotel.Id, $"亚朵更新价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}", ResourceLogType.PriceUpdate);
                             }
 
                             OpenApi.AddRuleInfo(hotel.Id, x.Id, 0, price.Id, 1);

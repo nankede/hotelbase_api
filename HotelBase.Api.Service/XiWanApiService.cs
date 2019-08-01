@@ -27,6 +27,7 @@ namespace HotelBase.Api.Service
         private static string HotelDetailUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotelInfo.ashx";
         private static string HotelDPriceUrl = $"http://{XiWanConst.XiWan_Url}/hotelapi/hotel/GetHotel.ashx";
         //http://{地址}/hotelapi/hotel/ GetHotelInfo.ashx
+        private static H_ResourceLogAccess logDb = new H_ResourceLogAccess();
 
         /// <summary>
         /// 获取酒店列表
@@ -108,6 +109,7 @@ namespace HotelBase.Api.Service
                         //增量同步
                         //OpenApi.SysInfo(id);
                         OpenApi.HotelOffline(id, 1);
+                        logDb.AddLog(id, $"喜玩新增酒店:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelAdd);
                     });
                     //if (addList != null && addList.Count > 0)
                     //{
@@ -134,7 +136,7 @@ namespace HotelBase.Api.Service
             if (hotelList == null || hotelList.Count == 0)
             {
                 result.Message = "无数据";
-
+                return result;
             }
             var provList = new Sys_AreaInfoAccess2().Query().Where(x => x.type == 2).ToList();
             var msgList = new List<string>();
@@ -165,6 +167,7 @@ namespace HotelBase.Api.Service
                     && h.HIUpdateTime == DateTime.Now
                     ).Where(h => h.Id == x.Id).Execute();
                     //会员 暂时未开发
+                    logDb.AddLog(x.Id, $"喜玩详情接口更新:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelUpdate);
                 }
                 else
                 {
@@ -241,6 +244,8 @@ namespace HotelBase.Api.Service
                         .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩无房型更新" && h.HIUpdateTime == DateTime.Now)
                         .Execute();
                         OpenApi.HotelOffline(x.Id, 0);
+                        logDb.AddLog(x.Id, $"喜玩无房型更新:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelDelete);
+
                         rtn.Message += $"[无效]";
                     }
                     else
@@ -251,6 +256,8 @@ namespace HotelBase.Api.Service
                            .Set(h => h.HIIsValid == 1 && h.HIUpdateName == "喜玩更新酒店有效" && h.HIUpdateTime == DateTime.Now)
                            .Execute();
                             OpenApi.HotelOffline(x.Id, 1);
+                            logDb.AddLog(x.Id, $"喜玩更新酒店有效:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelUpdate);
+
                             rtn.Message += $"[有效]";
                         }
                         hotel?.Rooms.ForEach(r =>
@@ -278,6 +285,8 @@ namespace HotelBase.Api.Service
                                     HRWindowsType = 0//需要转化
                                 };
                                 oldRoom.Id = (int)roomDb.Add(oldRoom);
+                                logDb.AddLog(x.Id, $"喜玩新增房型:{hotel.HotelId}:{hotel.HotelName}:{r.RoomTypeId}", ResourceLogType.RoomAdd);
+
 
                             }
                             else
@@ -287,6 +296,7 @@ namespace HotelBase.Api.Service
                                     roomDb.Update().Set(rr => rr.HRBedType == GetBedType(r.RoomName, r.BedType))
                                     .Set(rr => rr.HRBedSize == GetBedSize(r.RoomName, r.BedType))
                                     .Where(rr => rr.Id == oldRoom.Id).Execute();
+                                    logDb.AddLog(x.Id, $"喜玩更新房型床型:{hotel.HotelId}:{hotel.HotelName}:{r.RoomTypeId}", ResourceLogType.RoomUpdate);
                                 }
                             }
 
@@ -322,6 +332,7 @@ namespace HotelBase.Api.Service
                                         HRRUpdateTime = new DateTime(2000, 1, 1),
                                     };
                                     oldRule.Id = (int)rrDb.Add(oldRule);
+                                    logDb.AddLog(x.Id, $"喜玩新增策略:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}", ResourceLogType.RuleAdd);
                                 }
                                 else
                                 {
@@ -330,6 +341,8 @@ namespace HotelBase.Api.Service
                                     && rr.HRRUpdateName == "喜玩更新" && rr.HRRIsValid == 1
                                     && rr.HRRUpdateTime == DateTime.Now
                                     ).Execute();
+                                    logDb.AddLog(x.Id, $"喜玩更新策略:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}", ResourceLogType.RuleUpdate);
+
                                 }
                                 if (oldRule.Id > 0)
                                 {
@@ -360,6 +373,7 @@ namespace HotelBase.Api.Service
                                                 HRRId = oldRule.Id
                                             };
                                             price.Id = (int)pDb.Add(price);
+                                            logDb.AddLog(x.Id, $"喜玩新增价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}", ResourceLogType.PriceAdd);
                                         }
                                         else
                                         {
@@ -371,6 +385,7 @@ namespace HotelBase.Api.Service
                                             && pr.HRPUpdateName == "喜玩更新"
                                             && pr.HRPUpdateTime == DateTime.Now
                                             ).Execute();
+                                            logDb.AddLog(x.Id, $"喜玩更新价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}", ResourceLogType.PriceUpdate);
                                         }
                                         OpenApi.AddRuleInfo(x.Id, oldRoom.Id, p.BreakfastNum, price.Id, p.Status ? 1 : 0);
                                         OpenApi.SysInfo(x.Id);
@@ -408,6 +423,8 @@ namespace HotelBase.Api.Service
                             {
                                 OpenApi.AddRuleInfo(x.Id, err.Id, 0, pr.Id, 0);
                             });
+                            logDb.AddLog(x.Id, $"喜玩更新房型无效:{hotel.HotelId}:{hotel.HotelName}:{err.HROutId}", ResourceLogType.RoomDelete);
+
                         });
 
                         //同步房型
@@ -420,6 +437,7 @@ namespace HotelBase.Api.Service
                        .Set(h => h.HIIsValid == 0 && h.HIUpdateName == "喜玩酒店无信息更新" && h.HIUpdateTime == DateTime.Now)
                        .Execute();
                     OpenApi.HotelOffline(x.Id, 0);
+                    logDb.AddLog(x.Id, $"喜玩酒店无信息更新:{hotel.HotelId}:{hotel.HotelName}:{x.HIOutId}", ResourceLogType.HotelDelete);
                     rtn.Message += $"[无效]";
                 }
             });
