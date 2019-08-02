@@ -142,42 +142,51 @@ namespace HotelBase.Api.Service
             var msgList = new List<string>();
             Parallel.ForEach(hotelList, new ParallelOptions() { MaxDegreeOfParallelism = 3 }, (x, loopstate) =>
             {
-                var request = new XiWanHotelDetailRequest { HotelId = x.HIOutId };
-                var rtn = XiWanAPI.XiWanPost<XiWanHotelDetail, XiWanHotelDetailRequest>(request, HotelDetailUrl);
-                var hotel = rtn?.Result;
-                if (hotel?.HotelId > 0)
+                try
                 {
-                    var city = AddCityCode(hotel.CityCode, hotel.CityName) ?? new Sys_AreaInfoModel();
-                    var prov = new Sys_AreaInfoModel();
-                    if (city.pid > 0)
+                    var request = new XiWanHotelDetailRequest { HotelId = x.HIOutId };
+                    var rtn = XiWanAPI.XiWanPost<XiWanHotelDetail, XiWanHotelDetailRequest>(request, HotelDetailUrl);
+                    var hotel = rtn?.Result;
+                    if (hotel?.HotelId > 0)
                     {
-                        prov = provList.FirstOrDefault(p => p.id == city.pid) ?? new Sys_AreaInfoModel();
+                        var city = AddCityCode(hotel.CityCode, hotel.CityName) ?? new Sys_AreaInfoModel();
+                        var prov = new Sys_AreaInfoModel();
+                        if (city.pid > 0)
+                        {
+                            prov = provList.FirstOrDefault(p => p.id == city.pid) ?? new Sys_AreaInfoModel();
+                        }
+                        hDb.Update().Set(h =>
+                        h.HIGdLonLat == hotel.Position
+                        && h.HIName == hotel.HotelName
+                        && h.HIHotelIntroduction == hotel.Intro
+                        && h.HIAddress == hotel.Address
+                        && h.HILinkPhone == hotel.Tel
+                        && h.HICityId == city.id
+                        && h.HICity == (city.name ?? string.Empty)
+                        && h.HIProvinceId == prov.id
+                        && h.HIProvince == (prov.name ?? string.Empty)
+                        && h.HIUpdateName == "喜玩详情接口更新"
+                        && h.HIUpdateTime == DateTime.Now
+                        ).Where(h => h.Id == x.Id).Execute();
+                        //会员 暂时未开发
+                        logDb.AddLog(x.Id, $"喜玩详情接口更新:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelUpdate);
                     }
-                    hDb.Update().Set(h =>
-                    h.HIGdLonLat == hotel.Position
-                    && h.HIName == hotel.HotelName
-                    && h.HIHotelIntroduction == hotel.Intro
-                    && h.HIAddress == hotel.Address
-                    && h.HILinkPhone == hotel.Tel
-                    && h.HICityId == city.id
-                    && h.HICity == (city.name ?? string.Empty)
-                    && h.HIProvinceId == prov.id
-                    && h.HIProvince == (prov.name ?? string.Empty)
-                    && h.HIUpdateName == "喜玩详情接口更新"
-                    && h.HIUpdateTime == DateTime.Now
-                    ).Where(h => h.Id == x.Id).Execute();
-                    //会员 暂时未开发
-                    logDb.AddLog(x.Id, $"喜玩详情接口更新:{hotel.HotelId}:{hotel.HotelName}", ResourceLogType.HotelUpdate);
+                    else
+                    {
+                        msgList.Add(rtn?.Msg ?? "系统异常");
+                    }
+
+                    //房型等
+                    var d1 = Xw_HotelPrice(x.Id);
+                    msgList.Add($"||{x.Id}:{d1.Message}");
+                    Thread.Sleep(10);
                 }
-                else
+                catch (Exception ex)
                 {
-                    msgList.Add(rtn?.Msg ?? "系统异常");
+                    var log = $"{ex.Message}--{x.Id}---{ex.ToString()}";
+                    LogHelper.Error(log);
                 }
 
-                //房型等
-                var d1 = Xw_HotelPrice(x.Id);
-                msgList.Add($"||{x.Id}:{d1.Message}");
-                Thread.Sleep(10);
             });
             result.Data = msgList;
             return result;
