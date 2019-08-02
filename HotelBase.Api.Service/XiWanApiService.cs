@@ -240,12 +240,12 @@ namespace HotelBase.Api.Service
                 query.Where(x => x.Id == id);
             }
             var hotelList = query.ToList();
-            hotelList.ForEach(x =>
+            hotelList?.ForEach(x =>
             {
                 var hotel = GetHotelPrice(x.HIOutId);
                 if (hotel != null && hotel.HotelId > 0)
                 {
-                    var c = hotel?.Rooms.Count() ?? 0;
+                    var c = hotel?.Rooms?.Count() ?? 0;
                     rtn.Message += $"{c}个；";
                     if (c == 0)
                     {//房型数量为0  酒店无效
@@ -269,7 +269,7 @@ namespace HotelBase.Api.Service
 
                             rtn.Message += $"[有效]";
                         }
-                        hotel?.Rooms.ForEach(r =>
+                        hotel?.Rooms?.ForEach(r =>
                         {
                             var oldRoom = roomDb.Query().Where(rd => rd.HIId == x.Id && rd.HROutId == r.RoomTypeId.ToInt()).FirstOrDefault();
                             if (oldRoom == null || oldRoom.Id <= 0)
@@ -403,9 +403,9 @@ namespace HotelBase.Api.Service
                             }
                         });
 
-                        var outRoomIds = hotel.Rooms.Select(r => r.RoomTypeId.ToInt()).ToList(); //接口返回的房型Id
+                        var outRoomIds = hotel?.Rooms?.Select(r => r.RoomTypeId.ToInt()).ToList()??new List<int>(); //接口返回的房型Id
                         var dbRooms = roomDb.Query().Where(rd => rd.HIId == x.Id).ToList();
-                        var errDbRooms = dbRooms.Where(rd => !outRoomIds.Contains(rd.HROutId))?.ToList();
+                        var errDbRooms = dbRooms?.Where(rd => !outRoomIds.Contains(rd.HROutId))?.ToList();
                         if (errDbRooms != null && errDbRooms.Any())
                         {
                             LogHelper.Info("待无效房型id:" + JsonHelper.ToJson(errDbRooms) + "|| 更新时间：" + DateTime.Now.ToString(), "喜玩更新无效房型");
