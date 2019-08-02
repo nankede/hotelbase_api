@@ -373,7 +373,7 @@ namespace HotelBase.Api.Service
                                                 HRRId = oldRule.Id
                                             };
                                             price.Id = (int)pDb.Add(price);
-                                            logDb.AddLog(x.Id, $"喜玩新增价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}", ResourceLogType.PriceAdd);
+                                            logDb.AddLog(x.Id, $"喜玩新增价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}:{price.HRPDateInt}", ResourceLogType.PriceAdd);
                                         }
                                         else
                                         {
@@ -385,7 +385,7 @@ namespace HotelBase.Api.Service
                                             && pr.HRPUpdateName == "喜玩更新"
                                             && pr.HRPUpdateTime == DateTime.Now
                                             ).Execute();
-                                            logDb.AddLog(x.Id, $"喜玩更新价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}", ResourceLogType.PriceUpdate);
+                                            logDb.AddLog(x.Id, $"喜玩更新价格:{hotel.HotelId}:{hotel.HotelName}:{r.RoomId}:{p.Price}:{price.HRPCount}:{price.HRPDateInt}", ResourceLogType.PriceUpdate);
                                         }
                                         OpenApi.AddRuleInfo(x.Id, oldRoom.Id, p.BreakfastNum, price.Id, p.Status ? 1 : 0);
                                         OpenApi.SysInfo(x.Id);
