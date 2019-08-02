@@ -75,28 +75,36 @@ namespace HotelBase.Api.Common
         /// <returns></returns>
         public static T HttpPost<T>(string url, string param, string cntenttype = "")
         {
-            //ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
-            Encoding encoding = Encoding.UTF8;
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.Method = "POST";
-            request.Accept = "text/html, application/xhtml+xml, */*";
-            request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
-            request.ContentLength = 0;
-            if (!string.IsNullOrEmpty(param))
+            try
             {
-                byte[] buffer = encoding.GetBytes(param);
-                request.ContentLength = buffer.Length;
-                request.GetRequestStream().Write(buffer, 0, buffer.Length);
+                //ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
+                Encoding encoding = Encoding.UTF8;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.Method = "POST";
+                request.Accept = "text/html, application/xhtml+xml, */*";
+                request.ContentType = !string.IsNullOrWhiteSpace(cntenttype) ? cntenttype : "application/json";
+                request.ContentLength = 0;
+                if (!string.IsNullOrEmpty(param))
+                {
+                    byte[] buffer = encoding.GetBytes(param);
+                    request.ContentLength = buffer.Length;
+                    request.GetRequestStream().Write(buffer, 0, buffer.Length);
+                }
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                var rtnStr = string.Empty;
+                using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                {
+                    rtnStr = reader.ReadToEnd();
+                }
+                if (!string.IsNullOrEmpty(rtnStr))
+                {
+                    return rtnStr.ToObject<T>();
+                }
             }
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            var rtnStr = string.Empty;
-            using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+            catch (Exception ex)
             {
-                rtnStr = reader.ReadToEnd();
-            }
-            if (!string.IsNullOrEmpty(rtnStr))
-            {
-                return rtnStr.ToObject<T>();
+                var log = $"{ex.Message}--{url}--{param}--{ex.ToString()}";
+                LogHelper.Error(log);
             }
             return default(T);
         }
