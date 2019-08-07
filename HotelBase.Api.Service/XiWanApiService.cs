@@ -234,10 +234,10 @@ namespace HotelBase.Api.Service
 
             var roomDb = new H_HotelRoomAccess();
             var hDb = new H_HotelInfoAccess();
-            var query = hDb.Query().Where(h => h.HIOutType == 2);
+            var query = hDb?.Query().Where(h => h.HIOutType == 2);
             if (id > 0)
             {
-                query.Where(x => x.Id == id);
+                query?.Where(x => x.Id == id);
             }
             var hotelList = query.ToList();
             hotelList?.ForEach(x =>
