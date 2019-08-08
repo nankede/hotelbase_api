@@ -130,14 +130,12 @@ namespace HotelBase.Api.Controllers
                         var price = OrderBll.GetHotelPriceList(newmodel.HRRId, newmodel.HOCheckInDate, newmodel.HOCheckOutDate);
                         if (price != null && price.Any())
                         {
+                            var newtotal = 0.00M;
                             var total = price.Sum(s => s.HRPContractPrice) * newmodel.HORoomCount;
                             if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)
                             {
-                                if (createrequset.supplierSourceId == 1)
-                                {
-                                    total = total * 0.97M;
-                                }
-                                if (newmodel.HOSellPrice >= total)
+                                newtotal = createrequset.supplierSourceId == 1 ? total * 0.97M : total;
+                                if (newmodel.HOSellPrice >= newtotal)
                                 {
                                     issned = true;
                                     newmodel.HOContractPrice = total;
@@ -250,40 +248,17 @@ namespace HotelBase.Api.Controllers
         {
             var result = new DataResult();
             var item = createrequset.orderModel;
-            Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("appId", AtourAuth_APPID);
-            Type entityType = item.GetType();
-            PropertyInfo[] properties = entityType.GetProperties();
-            for (int i = 0; i < properties.Length; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(properties[i].GetValue(item, null).ToString()))
-                {
-                    if (properties[i].Name == "roomRateList")
-                    {
-                        dic.Add(properties[i].Name, JsonConvert.SerializeObject(properties[i].GetValue(item, null).ToString()));
-                    }
-                    else
-                    {
-                        dic.Add(properties[i].Name, properties[i].GetValue(item, null).ToString());
-                    }
-                }
-            }
-            dic.Remove("basePrice");
-            dic.Remove("roomPrice");
-            dic.Remove("productSerial");
-            dic.Remove("outCode");
-            var sign = AtourSignUtil.GetSignUtil(dic);
             var orderrequest = new OrderRequest
             {
                 appId = AtourAuth_APPID,
-                sign = sign,
+                //sign = sign,
                 hotelId = item.hotelId,
                 mebId = Convert.ToInt32(AtourAuth_MebId),
                 roomTypeId = item.roomTypeId,
                 roomNum = item.roomNum,
                 roomRateList = JsonConvert.SerializeObject(item.roomRateList),
                 arrival = item.arrival,
-                assureTime = item.arrival,
+                assureTime = item.assureTime,
                 departure = item.departure,
                 mobile = "18962529773",
                 contactName = item.contactName,
@@ -295,6 +270,20 @@ namespace HotelBase.Api.Controllers
                 couponsList = item.couponsList,
                 remark = item.remark,
             };
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            //dic.Add("appId", AtourAuth_APPID);
+            Type entityType = orderrequest.GetType();
+            PropertyInfo[] properties = entityType.GetProperties();
+            for (int i = 0; i < properties.Length; i++)
+            {
+                if (properties[i].GetValue(orderrequest, null) != null)
+                {
+                    dic.Add(properties[i].Name, properties[i].GetValue(orderrequest, null).ToString());
+                }
+            }
+            var sign = AtourSignUtil.GetSignUtil(dic);
+            orderrequest.sign = sign;
+
             var url = AtourAuth_URL + "baoku/order/createOrder";
             StringBuilder parm = new StringBuilder();
             PropertyInfo[] request = orderrequest.GetType().GetProperties();
@@ -325,7 +314,7 @@ namespace HotelBase.Api.Controllers
                 var price = OrderBll.GetHotelPriceList(ruleid, Convert.ToDateTime(item.arrival), Convert.ToDateTime(item.departure));
                 if (data["msg"].ToString().ToLower() == "success")
                 {
-                    var serialid = data["msg"]["atourOrderNo"].ToString();
+                    var serialid = data["result"]["atourOrderNo"].ToString();
 
                     result.Code = DataResultType.Sucess;
                     result.Data = orderseridid;
@@ -365,27 +354,27 @@ namespace HotelBase.Api.Controllers
                         //满房通知
                         OpenApi.HotelOrderStatus(orderseridid, 1);
                     }
-                    if (data["level"].ToString() == "1006")//报价不存在或者不可订
-                    {
-                        if (data["msg"].ToString().Contains("报价不可订"))
-                        {
-                            var neworder = OrderBll.GetModel(orderseridid);
-                            var newprice = OrderBll.GetHotelPriceList(neworder.HRRId, neworder.HOCheckInDate, neworder.HOCheckOutDate);
-                            if (price != null && price.Any())
-                            {
-                                var total = price.Sum(s => s.HRPContractPrice) * neworder.HORoomCount;
-                                createrequset.orderModel.roomPrice = total.ToString();
-                                if (createrequset.supplierSourceId == 1)
-                                {
-                                    total = total * 0.97M;
-                                }
-                                if (neworder.HOSellPrice >= total)
-                                {
-                                    AtourOrder(createrequset, orderseridid, ruleid, qlhotelid);
-                                }
-                            }
-                        }
-                    }
+                    //if (data["level"].ToString() == "1006")//报价不存在或者不可订
+                    //{
+                    //    if (data["msg"].ToString().Contains("报价不可订"))
+                    //    {
+                    //        var neworder = OrderBll.GetModel(orderseridid);
+                    //        var newprice = OrderBll.GetHotelPriceList(neworder.HRRId, neworder.HOCheckInDate, neworder.HOCheckOutDate);
+                    //        if (price != null && price.Any())
+                    //        {
+                    //            var total = price.Sum(s => s.HRPContractPrice) * neworder.HORoomCount;
+                    //            createrequset.orderModel.roomPrice = total.ToString();
+                    //            if (createrequset.supplierSourceId == 1)
+                    //            {
+                    //                total = total * 0.97M;
+                    //            }
+                    //            if (neworder.HOSellPrice >= total)
+                    //            {
+                    //                AtourOrder(createrequset, orderseridid, ruleid, qlhotelid);
+                    //            }
+                    //        }
+                    //    }
+                    //}
                     result.Code = DataResultType.Fail;
                     result.Message = data["msg"].ToString();
                     OrderBll.UpdatesSupplier(orderseridid, "", 2);
@@ -517,7 +506,7 @@ namespace HotelBase.Api.Controllers
                         OrderBll.UpdatesSupplier(orderseriald, "", 2);
                     }
                 }
-                
+
             }
             return result;
         }
@@ -667,32 +656,60 @@ namespace HotelBase.Api.Controllers
         public DataResult AtourCancelOrder(string orderid)
         {
             var result = new DataResult();
-            Dictionary<string, string> dic = new Dictionary<string, string>();
-            dic.Add("atourOrderNo", orderid);
-            dic.Add("appId", AtourAuth_APPID);
-            var sign = AtourSignUtil.GetSignUtil(dic);
-            var url = AtourAuth_URL + "baoku/order/cancelOrder";
-            var orderrequest = new
+            result.Code = DataResultType.Fail;
+            //日志
+            var logmodel = new HO_HotelOrderLogModel
             {
-                atourOrderNo = orderid,
-                appId = AtourAuth_APPID,
-                sign = sign
+                HOLOrderId = orderid,
+                HOLLogType = 1,//订单日志
+                HOLAddId = 0,
+                HOLAddName = "系统",
+                HOLAddDepartId = 0,
+                HOLAddDepartName = "系统",
+                HOLAddTime = DateTime.Now,
             };
-            var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
-            if (!string.IsNullOrWhiteSpace(orderresponse))
+            var ordermodel = OrderBll.GetModel(orderid);
+            if (ordermodel.Id > 0 && !string.IsNullOrWhiteSpace(ordermodel.HOSupplierSerialId))
             {
-                var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
-                if (data["msg"].ToString().ToLower() == "success")
+                Dictionary<string, string> dic = new Dictionary<string, string>();
+                dic.Add("atourOrderNo", ordermodel.HOSupplierSerialId);
+                dic.Add("appId", AtourAuth_APPID);
+                var sign = AtourSignUtil.GetSignUtil(dic);
+                var url = AtourAuth_URL + "baoku/order/cancelOrder";
+                var orderrequest = new
                 {
-                    result.Code = DataResultType.Sucess;
-                    OrderBll.UpdatesSataus(orderid, 6);
-                    OpenApi.HotelOrderStatus(orderid, 5);//noshow
+                    atourOrderNo = ordermodel.HOSupplierSerialId,
+                    appId = AtourAuth_APPID,
+                    sign = sign
+                };
+                StringBuilder parm = new StringBuilder();
+                PropertyInfo[] request = orderrequest.GetType().GetProperties();
+                int j = 0;
+                foreach (var t in request)
+                {
+                    if (j > 0) parm.Append("&");
+                    parm.AppendFormat("{0}={1}", t.Name, t.GetValue(orderrequest, null));
+                    j++;
                 }
-                else
+                var orderresponse = ApiHelper.HttpPost(url, parm.ToString(), "application/x-www-form-urlencoded");
+                logmodel.HOLRemark = "亚朵取消请求：" + parm.ToString() + "||亚朵取消接口返回：" + JsonConvert.SerializeObject(orderresponse);
+                OrderLogBll.AddOrderModel(logmodel);
+                if (!string.IsNullOrWhiteSpace(orderresponse))
                 {
-                    result.Code = DataResultType.Fail;
+                    var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
+                    if (data["msg"].ToString().ToLower() == "success")
+                    {
+                        result.Code = DataResultType.Sucess;
+                        OrderBll.UpdateAutorSataus(orderid, "2");
+                        OpenApi.HotelOrderStatus(orderid, 5);//noshow
+                    }
+                    else
+                    {
+                        result.Code = DataResultType.Fail;
+                    }
                 }
             }
+
             return result;
         }
 
@@ -806,22 +823,41 @@ namespace HotelBase.Api.Controllers
                     appId = AtourAuth_APPID,
                     sign = sign
                 };
-                var orderresponse = ApiHelper.HttpPost(url, JsonConvert.SerializeObject(orderrequest), "application/x-www-form-urlencoded");
+                StringBuilder parm = new StringBuilder();
+                PropertyInfo[] request = orderrequest.GetType().GetProperties();
+                int j = 0;
+                foreach (var t in request)
+                {
+                    if (j > 0) parm.Append("&");
+                    parm.AppendFormat("{0}={1}", t.Name, t.GetValue(orderrequest, null));
+                    j++;
+                }
+                var orderresponse = ApiHelper.HttpPost(url, parm.ToString(), "application/x-www-form-urlencoded");
                 if (!string.IsNullOrWhiteSpace(orderresponse))
                 {
+                    var searchstatus = "";
                     var data = JsonConvert.DeserializeObject<JObject>(orderresponse);
                     if (data["msg"].ToString().ToLower() == "success")
                     {
                         result.Code = DataResultType.Sucess;
                         var oldstatus = GetStatus(ordermodel.HOStatus);
-                        var up = OrderBll.UpdateAutorSataus(orderid, data["result"]["status"].ToString());
+                        if (data["result"] != null && data["result"].Any())
+                        {
+                            var updatestatus = data["result"].FirstOrDefault();
+                            if (updatestatus != null)
+                            {
+                                searchstatus = updatestatus["status"].ToString();
+                            }
+
+                        }
+                        var up = OrderBll.UpdateAutorSataus(orderid, searchstatus);
                         var neworder = OrderBll.GetModel(orderid);
                         var newstatus = GetStatus(neworder.HOStatus);
                         if (oldstatus != newstatus)
                         {
                             logmodel.HOLRemark = "亚朵查询订单接口返回：" + JsonConvert.SerializeObject(orderresponse);
                             OrderLogBll.AddOrderModel(logmodel);
-                            logmodel.HOLRemark = "亚朵订单更新：亚朵返回订单状态" + data["result"]["status"].ToString() + "(1-预定 2-取消 3-夜审取消（即noshow） 4-入住 5-离店)" + "我方订单状态：" + oldstatus;
+                            logmodel.HOLRemark = "亚朵订单更新：亚朵返回订单状态" + searchstatus + "(1-预定 2-取消 3-夜审取消（即noshow） 4-入住 5-离店)" + "我方订单状态：" + oldstatus;
                             OrderLogBll.AddOrderModel(logmodel);
                             logmodel.HOLRemark = "我方订单更新：更新结果=" + (up > 0 ? "更新成功" : "更新失败") + "当前订单状态：" + newstatus;
                             OrderLogBll.AddOrderModel(logmodel);
