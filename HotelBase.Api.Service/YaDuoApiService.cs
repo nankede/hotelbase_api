@@ -34,7 +34,7 @@ namespace HotelBase.Api.Service
                 Data = $"{maxId + top};"
             };
 
-            var citylist = new Sys_AreaMatchAccess().Query().Where(x => x.OutType == 1 && x.HbId > maxId).OrderBy(x => x.OutCityId).ToList();
+            var citylist = new Sys_AreaMatchAccess().Query().Where(x => x.OutType == 1 && x.HbId > maxId).ToList();
             if (citylist == null || !citylist.Any())
             {
                 result.Message = $"{maxId}未查询到数据";
@@ -163,7 +163,7 @@ namespace HotelBase.Api.Service
             var result = new DataResult();
 
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId >= maxId && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.Id >= maxId && h.HIOutType == 1).Top(top)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
                 return result;
@@ -214,7 +214,7 @@ namespace HotelBase.Api.Service
             var result = new DataResult();
             result.Data = string.Empty;
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId >= id && h.HIOutType == 1).Top(top).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.Id >= id && h.HIOutType == 1).Top(top)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
                 result.Message = "未查询到酒店";
@@ -251,7 +251,7 @@ namespace HotelBase.Api.Service
                     result.Data += $"[{indexCount++}]{x.HIName}新增房型{list.Count()}个；";
                     list.ForEach(l =>
                     {
-                        var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HROutType == 1)?.FirstOrDefault();
+                        var baseRoom = room?.Where(r => r.HROutId == l.roomTypeId && r.HIId == x.Id && r.HROutType == 1)?.FirstOrDefault();
                         if (baseRoom == null || baseRoom.Id <= 0)
                         {
                             var roomId = db.Add(new H_HotelRoomModel
@@ -303,7 +303,7 @@ namespace HotelBase.Api.Service
                 }
                 //查询最近三天的价格和库存
                 var rrRtn = GetRoomRate(x.HIOutId, DateTime.Now, 7);
-                result.Data += rrRtn.Data?.ToString() ?? string.Empty;
+                result.Data += rrRtn.Message?.ToString() ?? string.Empty;
             });
 
             return result;
@@ -347,8 +347,9 @@ namespace HotelBase.Api.Service
         /// <summary>
         /// 酒店价格
         /// </summary>
-        /// <param name="maxId"></param>
-        /// <param name="top"></param>
+        /// <param name="maxId">外部酒店ID</param>
+        /// <param name="start">起始日期</param>
+        /// <param name="top">几天</param>
         /// <returns></returns>
         public static DataResult GetRoomRate(int id, DateTime start, int top)
         {
@@ -356,7 +357,7 @@ namespace HotelBase.Api.Service
             var url = AtourSignUtil.AtourAuth_URL + "baoku/hotel/getRoomRateList";
 
             var hDb = new H_HotelInfoAccess();
-            var hotelList = hDb.Query().Where(h => h.HIOutId == id && h.HIOutType == 1).OrderBy(h => h.HIOutId)?.ToList();
+            var hotelList = hDb.Query().Where(h => h.HIOutId == id && h.HIOutType == 1)?.ToList();
             if (hotelList == null || hotelList.Count == 0)
             {
                 result.Message = "未查询到酒店";
@@ -372,7 +373,8 @@ namespace HotelBase.Api.Service
             //end 是"2018-08-11"结束日期，格式：yyyy - MM - dd
             hotelList.ForEach(x =>
             {
-                SetRoomRate(x, start, top);
+                var d = SetRoomRate(x, start, top);
+                result.Message += d.Message;
             });
 
             return result;
@@ -386,105 +388,117 @@ namespace HotelBase.Api.Service
         {
             var result = new DataResult();
             result.Data = string.Empty;
+            result.Message = $"{hotel.Id}-{hotel.HIName}-";
             start = start.Year <= 2000 ? DateTime.Now : start;
             var roomdb = new H_HotelRoomAccess();
             var roomType = roomdb.Query().Where(x => x.HIId == hotel.Id && x.HROutType == 1).ToList();
             roomType?.ForEach(x =>
             {
-                var priceRtn = GetYdPrice(hotel.HIOutId, start, top, x);//价格
-                var storeRtn = GetYdStore(hotel.HIOutId, start, top, x);//库存
-                if (priceRtn != null && priceRtn.result != null)
+                try
                 {
-                    var rrDb = new H_HotelRoomRuleAccess();
-                    var pDb = new H_HoteRulePriceAccess();
-                    priceRtn.result.ForEach(p =>
+                    var priceRtn = GetYdPrice(hotel.HIOutId, start, top, x);//价格
+                    var storeRtn = GetYdStore(hotel.HIOutId, start, top, x);//库存
+                    if (priceRtn != null && priceRtn.result != null)
                     {
-                        var oldRule = rrDb.Query().Where(rr => rr.HRROutId == p.roomTypeId && rr.HRROutType == 1
-                        && rr.HRRName == p.roomRateTypeName
-                        ).FirstOrDefault();
-                        var newStore = storeRtn?.result?.FirstOrDefault(ns => ns.roomTypeId == p.roomTypeId && ns.accDate == p.accDate);
+                        var rrDb = new H_HotelRoomRuleAccess();
+                        var pDb = new H_HoteRulePriceAccess();
+                        priceRtn.result.ForEach(p =>
+                        {
+                            var oldRule = rrDb.Query().Where(rr => rr.HRROutId == p.roomTypeId && rr.HRROutType == 1 && rr.HIId == hotel.Id
+                            && rr.HRRName == p.roomRateTypeName
+                            ).FirstOrDefault();
+                            var newStore = storeRtn?.result?.FirstOrDefault(ns => ns.roomTypeId == p.roomTypeId && ns.accDate == p.accDate);
 
-                        if (oldRule == null)
-                        {
-                            oldRule = new H_HotelRoomRuleModel
+                            if (oldRule == null)
                             {
-                                HRRName = p.roomRateTypeName ?? string.Empty,
-                                HRROutId = p.roomTypeId,
-                                HRRIsValid = 1,
-                                HRROutType = 1,
-                                HIId = hotel.Id,
-                                Id = 0,
-                                HRId = x.Id,
-                                HRRAddName = "亚朵新增",
-                                HRRAddTime = DateTime.Now,
-                                HRRBreakfastRule = 0,
-                                HRRBreakfastRuleName = string.Empty,
-                                HRRCancelRule = 0,
-                                HRRCancelRuleName = string.Empty,
-                                HRRSourceId = 10104,
-                                HRRSourceName = "集团直连",
-                                HRRSupplierId = 1,
-                                HRRSupplierName = "亚朵集团",
-                                HRRUpdateName = string.Empty,
-                                HRRUpdateTime = DateTime.Now
-                            };
-                            oldRule.Id = (int)rrDb.Add(oldRule);
-                            logDb.AddLog(hotel.Id, $"亚朵新增策略:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}", ResourceLogType.RuleAdd);
-                        }
-                        //else
-                        //{
-                        //    rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 1).Execute();
-                        //}
-                        if (oldRule != null && oldRule.Id > 0)
-                        {
-                            var date = DateTime.MinValue;
-                            DateTime.TryParse(p.accDate, out date);
-                            var dateInit = ConvertHelper.ToInt32(date.ToString("yyyyMMdd"), 0);
-                            var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
-                            if (price == null || price.Id <= 0)
-                            {//新增价格和库存
-                                price = new H_HoteRulePriceModel
+                                oldRule = new H_HotelRoomRuleModel
                                 {
-                                    Id = 0,
+                                    HRRName = p.roomRateTypeName ?? string.Empty,
+                                    HRROutId = p.roomTypeId,
+                                    HRRIsValid = 1,
+                                    HRROutType = 1,
                                     HIId = hotel.Id,
+                                    Id = 0,
                                     HRId = x.Id,
-                                    HRPAddName = "亚朵新增",
-                                    HRPAddTime = DateTime.Now,
-                                    HRPContractPrice = p.roomRate,
-                                    HRPDate = date,
-                                    HRPCount = newStore?.inventoryNum ?? 0,
-                                    HRPDateInt = dateInit,
-                                    HRPIsValid = 1,
-                                    HRPRetainCount = 0,
-                                    HRPSellPrice = p.roomRate,
-                                    HRPStatus = 1,
-                                    HRPUpdateName = string.Empty,
-                                    HRPUpdateTime = DateTime.Now,
-                                    HRRId = oldRule.Id
+                                    HRRAddName = "亚朵新增",
+                                    HRRAddTime = DateTime.Now,
+                                    HRRBreakfastRule = 0,
+                                    HRRBreakfastRuleName = string.Empty,
+                                    HRRCancelRule = 0,
+                                    HRRCancelRuleName = string.Empty,
+                                    HRRSourceId = 10104,
+                                    HRRSourceName = "集团直连",
+                                    HRRSupplierId = 1,
+                                    HRRSupplierName = "亚朵集团",
+                                    HRRUpdateName = string.Empty,
+                                    HRRUpdateTime = DateTime.Now
                                 };
-                                price.Id = (int)pDb.Add(price);
-                                logDb.AddLog(hotel.Id, $"亚朵新增价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}:{price.HRPDateInt}", ResourceLogType.PriceAdd);
+                                oldRule.Id = (int)rrDb.Add(oldRule);
+                                logDb.AddLog(hotel.Id, $"亚朵新增策略:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}", ResourceLogType.RuleAdd);
                             }
-                            else
+                            //else
+                            //{
+                            //    rrDb.Update().Set(rr => rr.HRRSupplierName == "亚朵集团" && rr.HRRSupplierId == 1).Execute();
+                            //}
+                            if (oldRule != null && oldRule.Id > 0)
                             {
-                                var sql = pDb.Update().Where(pr => pr.Id == price.Id);
-                                if (newStore != null)
-                                {
-                                    sql.Set(pr => pr.HRPCount == newStore.inventoryNum);
+                                var date = DateTime.MinValue;
+                                DateTime.TryParse(p.accDate, out date);
+                                var dateInit = ConvertHelper.ToInt32(date.ToString("yyyyMMdd"), 0);
+                                var price = pDb.Query().Where(pr => pr.HRRId == oldRule.Id && pr.HRPDateInt == dateInit).FirstOrDefault();
+                                if (price == null || price.Id <= 0)
+                                {//新增价格和库存
+                                    price = new H_HoteRulePriceModel
+                                    {
+                                        Id = 0,
+                                        HIId = hotel.Id,
+                                        HRId = x.Id,
+                                        HRPAddName = "亚朵新增",
+                                        HRPAddTime = DateTime.Now,
+                                        HRPContractPrice = p.roomRate,
+                                        HRPDate = date,
+                                        HRPCount = newStore?.inventoryNum ?? 0,
+                                        HRPDateInt = dateInit,
+                                        HRPIsValid = 1,
+                                        HRPRetainCount = 0,
+                                        HRPSellPrice = p.roomRate,
+                                        HRPStatus = 1,
+                                        HRPUpdateName = string.Empty,
+                                        HRPUpdateTime = DateTime.Now,
+                                        HRRId = oldRule.Id
+                                    };
+                                    price.Id = (int)pDb.Add(price);
+                                    logDb.AddLog(hotel.Id, $"亚朵新增价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}:{price.HRPDateInt}", ResourceLogType.PriceAdd);
                                 }
-                                sql.Set(pr => pr.HRPContractPrice == p.roomRate
-                                && pr.HRPSellPrice == p.roomRate
-                                && pr.HRPUpdateName == "亚朵更新"
-                                && pr.HRPUpdateTime == DateTime.Now
-                                ).Execute();
-                                logDb.AddLog(hotel.Id, $"亚朵更新价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}:{price.HRPDateInt}", ResourceLogType.PriceUpdate);
+                                else
+                                {
+                                    var sql = pDb.Update().Where(pr => pr.Id == price.Id);
+                                    if (newStore != null)
+                                    {
+                                        sql.Set(pr => pr.HRPCount == newStore.inventoryNum);
+                                    }
+                                    sql.Set(pr => pr.HRPContractPrice == p.roomRate
+                                    && pr.HRPSellPrice == p.roomRate
+                                    && pr.HRPUpdateName == "亚朵更新"
+                                    && pr.HRPUpdateTime == DateTime.Now
+                                    ).Execute();
+                                    logDb.AddLog(hotel.Id, $"亚朵更新价格:{hotel.HIOutId}:{hotel.HIName}:{ p.roomTypeId}:{p.roomRate }:{newStore?.inventoryNum ?? 0}:{price.HRPDateInt}", ResourceLogType.PriceUpdate);
+                                }
+
+                                OpenApi.AddRuleInfo(hotel.Id, x.Id, 0, price.Id, 1);
+                                OpenApi.SysInfo(x.Id);
+
                             }
-
-                            OpenApi.AddRuleInfo(hotel.Id, x.Id, 0, price.Id, 1);
-                            OpenApi.SysInfo(x.Id);
-
-                        }
-                    });
+                        });
+                    }
+                    else
+                    {
+                        result.Message += $"{x.Id}-{x.HRName}没有价格数据;";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.Error($"{hotel.Id}-{hotel.HIName}-{x.Id}-{x.HRName}", ex);
                 }
             });
             return result;
