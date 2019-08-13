@@ -334,7 +334,7 @@ namespace HotelBase.Api.Controllers
                         }
                     }
                     //下单成功通知
-                    OpenApi.HotelOrderStatus(orderseridid, 2);
+                    //OpenApi.HotelOrderStatus(orderseridid, 2);
                 }
                 else
                 {
@@ -352,7 +352,7 @@ namespace HotelBase.Api.Controllers
                             OrderLogBll.AddOrderModel(logmodel);
                         }
                         //满房通知
-                        OpenApi.HotelOrderStatus(orderseridid, 1);
+                        //OpenApi.HotelOrderStatus(orderseridid, 1);
                     }
                     //if (data["level"].ToString() == "1006")//报价不存在或者不可订
                     //{
@@ -869,7 +869,7 @@ namespace HotelBase.Api.Controllers
                                     status = 2;
                                     break;
                                 case "2":
-                                    status = 6;
+                                    status = 1;
                                     break;
                                 case "3":
                                     status = 5;
