@@ -134,7 +134,7 @@ namespace HotelBase.Api.Controllers
                             var total = price.Sum(s => s.HRPContractPrice) * newmodel.HORoomCount;
                             if (createrequset.supplierSourceId == 1 || createrequset.supplierSourceId == 2)
                             {
-                                newtotal = createrequset.supplierSourceId == 1 ? total * 0.97M : total;
+                                newtotal = createrequset.supplierSourceId == 1 ? total * 0.94M : total;
                                 if (newmodel.HOSellPrice >= newtotal)
                                 {
                                     issned = true;
@@ -481,7 +481,7 @@ namespace HotelBase.Api.Controllers
                             createrequset.orderModel.roomPrice = total.ToString();
                             if (createrequset.supplierSourceId == 1)
                             {
-                                total = total * 0.97M;
+                                total = total * 0.94M;
                             }
                             if (neworder.HOSellPrice >= total)
                             {
