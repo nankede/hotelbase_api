@@ -525,8 +525,6 @@ namespace HotelBase.Api.DataAccess.Order
             switch (status)
             {
                 case "1":
-                    qulangstatus = 0;
-                    break;
                 case "4":
                 case "5":
                     qulangstatus = 1;
